@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/npcs/npc.gd" id="1_npc"]
+[ext_resource type="Script" path="res://scenes/characters/character_model.gd" id="2_model"]
+[ext_resource type="FontFile" path="res://assets/fonts/Kurale-Regular.ttf" id="3_font"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_pilot"]
+radius = 0.45
+height = 1.8
+
+[node name="Pilot" type="StaticBody3D"]
+script = ExtResource("1_npc")
+display_name = "Captain Gus"
+first_lines = PackedStringArray("Oh! You're alive! Thank goodness... I thought I was the only one who made it out of that mess.", "I'm Gus. Captain Gus. Well... the captain of a plane that used to fly.", "We were cruising over the ocean when a huge flock of seagulls flew straight into the left engine. Then the right one caught fire. Not my best day.", "I tried to glide us down onto the beach, but those mountains came out of nowhere. We skidded right over them, and the trees took a wing as a souvenir.", "My leg's banged up, so I'm stuck on this seat for now. But you look like you can still punch a rabbit.", "Listen. Mountains all around, ocean on the other side... we're stuck on this island. You need to find a way to get us out of here.", "Hunt what you can, sell the loot to anyone you find, and earn enough to buy our way off this rock. I believe in you, kid!")
+repeat_lines = PackedStringArray("Any luck finding a way out yet?", "Hunt animals, sell their loot and earn money. There has to be a way off this island!")
+quest_title = "Find a Way Out"
+quest_body = "Captain Gus is stuck with a hurt leg. Hunt animals around the island, sell their loot and earn money to find a way off the island."
+sits_on_seat = true
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("2_model")
+shirt_color = Color(0.95, 0.95, 0.93, 1)
+short_sleeves = true
+pants_color = Color(0.16, 0.18, 0.26, 1)
+hat = 1
+tie = true
+mustache = true
+bandaged_leg = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_pilot")
+
+[node name="NameLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+billboard = 1
+modulate = Color(0.98, 0.96, 0.92, 1)
+outline_modulate = Color(0, 0, 0, 0.55)
+text = "Captain Gus"
+font = ExtResource("3_font")
+font_size = 40
+outline_size = 10
+pixel_size = 0.004
+visibility_range_end = 15.0

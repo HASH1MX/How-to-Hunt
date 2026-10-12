@@ -3,12 +3,16 @@
 [ext_resource type="Script" path="res://scenes/world/crash_forest/crash_forest.gd" id="1_forest"]
 [ext_resource type="Script" path="res://scenes/world/terrain/terrain.gd" id="2_terrain"]
 [ext_resource type="Script" path="res://scenes/world/props/forest_scatter.gd" id="3_scatter"]
+[ext_resource type="Script" path="res://scenes/world/crash_site/crashed_plane.gd" id="4_plane"]
+[ext_resource type="Script" path="res://scenes/world/water/water.gd" id="5_water"]
+[ext_resource type="Script" path="res://scenes/items/world_item.gd" id="6_item"]
+[ext_resource type="PackedScene" path="res://scenes/npcs/pilot/pilot.tscn" id="7_pilot"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_forest"]
 sky_top_color = Color(0.3, 0.52, 0.82, 1)
 sky_horizon_color = Color(0.68, 0.78, 0.86, 1)
-ground_bottom_color = Color(0.25, 0.32, 0.3, 1)
-ground_horizon_color = Color(0.68, 0.78, 0.86, 1)
+ground_bottom_color = Color(0.12, 0.33, 0.48, 1)
+ground_horizon_color = Color(0.56, 0.7, 0.8, 1)
 sun_angle_max = 15.0
 
 [sub_resource type="Sky" id="Sky_forest"]
@@ -51,9 +55,45 @@ directional_shadow_max_distance = 100.0
 [node name="Terrain" type="StaticBody3D" parent="."]
 script = ExtResource("2_terrain")
 
-[node name="ForestScatter" type="Node3D" parent="." node_paths=PackedStringArray("terrain")]
+[node name="Water" type="MeshInstance3D" parent="." node_paths=PackedStringArray("terrain")]
+script = ExtResource("5_water")
+terrain = NodePath("../Terrain")
+
+[node name="ForestScatter" type="Node3D" parent="." node_paths=PackedStringArray("terrain", "no_grass_center")]
 script = ExtResource("3_scatter")
 terrain = NodePath("../Terrain")
+no_grass_center = NodePath("../CrashedPlane")
+
+[node name="CrashedPlane" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -10)
+rotation = Vector3(0, 0.4, 0)
+script = ExtResource("4_plane")
+
+[node name="TestItems" type="Node3D" parent="."]
+
+[node name="Stone1" type="RigidBody3D" parent="TestItems"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.6, 3.5)
+script = ExtResource("6_item")
+item_id = &"stone"
+
+[node name="Stone2" type="RigidBody3D" parent="TestItems"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.6, 4.5)
+script = ExtResource("6_item")
+item_id = &"stone"
+
+[node name="Stick1" type="RigidBody3D" parent="TestItems"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.6, 7)
+script = ExtResource("6_item")
+item_id = &"stick"
+
+[node name="Stick2" type="RigidBody3D" parent="TestItems"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.6, 8)
+script = ExtResource("6_item")
+item_id = &"stick"
+
+[node name="Pilot" parent="." instance=ExtResource("7_pilot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -2)
+rotation = Vector3(0, -2.68, 0)
 
 [node name="SpawnPoint" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 6)

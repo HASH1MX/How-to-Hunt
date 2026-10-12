@@ -19,19 +19,26 @@ static func begin() -> SurfaceTool:
 ## Adds a shape as flat-shaded triangles.
 ## jitter = how much the corners wobble (0 = perfectly clean shape).
 ## color_variation = how much each facet's brightness randomly differs.
+## alt_color / alt_chance = paint some facets in a second color (like marks on birch bark).
 static func add_shape(st: SurfaceTool, shape: PrimitiveMesh, xform: Transform3D, color: Color,
-		jitter: float = 0.0, color_variation: float = 0.06, rng: RandomNumberGenerator = null) -> void:
+		jitter: float = 0.0, color_variation: float = 0.06, rng: RandomNumberGenerator = null,
+		alt_color: Color = Color.BLACK, alt_chance: float = 0.0) -> void:
 	var arrays := shape.get_mesh_arrays()
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 	if indices.is_empty():
 		indices = PackedInt32Array(range(verts.size()))
 	var noise := _get_noise()
+	var use_alt := false
 	for i in range(0, indices.size(), 3):
 		var shade := 1.0
 		if rng != null:
 			shade += rng.randf_range(-color_variation, color_variation)
-		st.set_color(Color(color.r * shade, color.g * shade, color.b * shade))
+			# Triangles come in pairs (squares), so decide once per pair.
+			if alt_chance > 0.0 and i % 6 == 0:
+				use_alt = rng.randf() < alt_chance
+		var face_color := alt_color if use_alt else color
+		st.set_color(Color(face_color.r * shade, face_color.g * shade, face_color.b * shade))
 		for k in 3:
 			var v := verts[indices[i + k]]
 			if jitter > 0.0:
