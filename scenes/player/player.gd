@@ -1,6 +1,10 @@
 extends CharacterBody3D
-## Prototype player: third-person movement.
+## The player: first-person movement, like How to Fish.
 ## WASD = move, Mouse = look, Space = jump, Esc = free the mouse, Left click = capture it again.
+##
+## The body is on render layer 2, which this player's own camera does not draw,
+## so you don't see the inside of your own body. Other players (later, in
+## multiplayer) will still see it, and you still see your own shadow.
 
 @export var walk_speed: float = 5.0
 @export var jump_velocity: float = 4.5
@@ -8,25 +12,22 @@ extends CharacterBody3D
 ## If the player falls below this height, they are sent back to the spawn point.
 @export var fall_limit: float = -20.0
 
-@onready var camera_pivot: Node3D = $CameraPivot
-@onready var spring_arm: SpringArm3D = $CameraPivot/SpringArm3D
+@onready var head: Node3D = $Head
 
 var spawn_position: Vector3
 
 
 func _ready() -> void:
 	spawn_position = global_position
-	# Stop the camera arm from bumping into the player's own body.
-	spring_arm.add_excluded_object(get_rid())
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Left/right turns the whole player, up/down tilts only the camera.
+		# Left/right turns the whole player, up/down tilts only the head.
 		rotate_y(-event.relative.x * mouse_sensitivity)
-		camera_pivot.rotate_x(-event.relative.y * mouse_sensitivity)
-		camera_pivot.rotation.x = clampf(camera_pivot.rotation.x, deg_to_rad(-70.0), deg_to_rad(30.0))
+		head.rotate_x(-event.relative.y * mouse_sensitivity)
+		head.rotation.x = clampf(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 	elif event.is_action_pressed("ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:

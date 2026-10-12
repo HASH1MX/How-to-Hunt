@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/world/crash_forest/crash_forest.gd" id="1_forest"]
+[ext_resource type="Script" path="res://scenes/world/terrain/terrain.gd" id="2_terrain"]
+[ext_resource type="Script" path="res://scenes/world/props/forest_scatter.gd" id="3_scatter"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_forest"]
+sky_top_color = Color(0.3, 0.52, 0.82, 1)
+sky_horizon_color = Color(0.68, 0.78, 0.86, 1)
+ground_bottom_color = Color(0.25, 0.32, 0.3, 1)
+ground_horizon_color = Color(0.68, 0.78, 0.86, 1)
+sun_angle_max = 15.0
+
+[sub_resource type="Sky" id="Sky_forest"]
+sky_material = SubResource("ProceduralSkyMaterial_forest")
+
+[sub_resource type="Environment" id="Environment_forest"]
+background_mode = 2
+sky = SubResource("Sky_forest")
+ambient_light_source = 3
+ambient_light_energy = 0.6
+tonemap_mode = 2
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 2.5
+glow_enabled = true
+glow_intensity = 0.5
+glow_bloom = 0.05
+fog_enabled = true
+fog_light_color = Color(0.6, 0.72, 0.84, 1)
+fog_density = 0.008
+fog_aerial_perspective = 0.4
+fog_sky_affect = 0.1
+adjustment_enabled = true
+adjustment_contrast = 1.08
+
+[node name="CrashForest" type="Node3D"]
+script = ExtResource("1_forest")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_forest")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 0)
+rotation = Vector3(-0.6, 0.7, 0)
+light_color = Color(1, 0.93, 0.8, 1)
+light_energy = 1.5
+shadow_enabled = true
+directional_shadow_max_distance = 100.0
+
+[node name="Terrain" type="StaticBody3D" parent="."]
+script = ExtResource("2_terrain")
+
+[node name="ForestScatter" type="Node3D" parent="." node_paths=PackedStringArray("terrain")]
+script = ExtResource("3_scatter")
+terrain = NodePath("../Terrain")
+
+[node name="SpawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 6)
