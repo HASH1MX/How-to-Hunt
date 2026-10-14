@@ -8,8 +8,8 @@
 | 2 | First playable prototype + Windows export | ✅ Done |
 | 3 | Crash Forest | 🔨 Nearly done (new `.exe` export still to do) |
 | 4 | Player system | 🔨 Mostly done early, at the user's request |
-| 5 | Animal system | — |
-| 6 | Hunting and punching | 🔨 Punching done (10 damage); animals, loot still to do |
+| 5 | Animal system | ✅ Done: rabbits, chickens, squirrels, a few deer |
+| 6 | Hunting and punching | ✅ Done: punching (10 dmg), damage numbers, loot drops |
 | 7 | Inventory and economy | 🔨 Inventory done; cash still to do |
 | 8 | Merchant and weapons | — |
 | 9 | Multiplayer prototype | — |
@@ -41,6 +41,16 @@
 - Inventory: 4 slots + a hand slot. E picks up into the hand, 1-4 stores, Q drops. Placeholder stone and stick items.
 - E talks to NPCs; conversations type out in a dialogue box.
 
+**Animals (first island: easy, never attack)**
+- Rabbit (30 HP, shy), Chicken (20 HP), Squirrel (20 HP, shy), Deer (80 HP, very shy, only 4).
+- Wander, flee when hit or when you run near them (crouch to sneak up), respawn 60 s after being hunted.
+- Drop loot: Rabbit Pelt, Feathers, Squirrel Tail, Deer Hide (sell values ready for the merchant).
+- Floating damage numbers, white hit flash and knockback.
+
+**Settings and menus**
+- Esc pause menu (Resume / Settings / Main Menu / Quit).
+- Settings: mouse sensitivity, invert Y, FOV, graphics presets and options, window mode, V-Sync, FPS limit, rebindable keys. Saved to the user folder.
+
 **GUI (How to Fish style, Kurale font)**
 - Round health / food / breath icons, stamina bar, inventory slots with 3D item icons, money box, quest tip (J), pick-up / talk prompts, underwater tint and damage flash.
 
@@ -50,14 +60,15 @@
 |---|---|
 | WASD | Move |
 | Shift | Sprint |
+| Ctrl | Crouch (hold) |
 | Space | Jump |
 | Mouse | Look |
-| Left click | Punch |
+| Left click | Punch (click fast, or hold) |
 | E | Pick up / talk / continue dialogue |
 | 1-4 | Select slot, or store the hand item there |
 | Q | Drop held item |
 | J | Show / hide quest tip |
-| Esc | Free the mouse |
+| Esc | Pause menu |
 
 ## Technical decisions
 
@@ -73,6 +84,8 @@
 | Interactables use `interact(player)` and `get_interact_text()` | Items, NPCs and future things (merchant, portal) all work with E the same way. |
 | Damage uses `take_hit(amount, from, at)` | Animals only need this one method to be punchable. |
 | Physics layers: 1 world, 3 items, 4 interactables | The E ray only finds things you can use. |
+| Settings autoload (`Settings`), saved in `user://settings.cfg` | One place for all options; prompts show the player's own key names. |
+| Animals extend one `Animal` base class | Each species only defines its stats, model and animation. |
 | `build/` is not stored in Git | Builds are large; they will be shared through GitHub Releases. |
 
 ## How to export (command line)

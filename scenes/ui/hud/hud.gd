@@ -70,7 +70,7 @@ func show_tip(title: String, body: String, seconds: float = 20.0) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_tip"):
 		_quest_tip.toggle()
-	elif event.is_action_pressed("interact") and _dialogue.is_open():
+	elif event.is_action_pressed("interact") and _dialogue.is_open() and not player.in_menu:
 		_dialogue.advance()
 		get_viewport().set_input_as_handled()
 
@@ -87,7 +87,12 @@ func _process(delta: float) -> void:
 	_pickup_key.visible = target != null
 	if target != null:
 		_pickup_name.text = target.get_interact_text()
-	_hint.text = "[1-4] Store     [Q] Drop" if player.inventory.hand_item != null and not _dialogue.is_open() else ""
+	_pickup_key.text = "[%s]" % Settings.get_binding_text("interact")
+	if player.inventory.hand_item != null and not _dialogue.is_open():
+		_hint.text = "[%s-%s] Store     [%s] Drop" % [Settings.get_binding_text("slot_1"),
+				Settings.get_binding_text("slot_4"), Settings.get_binding_text("drop")]
+	else:
+		_hint.text = ""
 
 
 # --- Building the layout ---------------------------------------------------

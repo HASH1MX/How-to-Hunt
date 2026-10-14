@@ -13,8 +13,8 @@ signal punch_hit
 
 @export var skin_color := Color(0.87, 0.7, 0.48)
 @export var sleeve_color := Color(0.27, 0.33, 0.55)
-## Seconds between punches.
-@export var punch_cooldown := 0.36
+## Seconds between punches when no gap is given.
+@export var punch_cooldown := 0.32
 
 ## Rest and full-punch positions for each arm, relative to the camera (-Z is forward).
 ## The fists are turned so the thumb is on top, like a boxing stance.
@@ -27,7 +27,7 @@ const ARM_SCALE := 1.35
 # Punch timing (seconds): pull back, then jab out, then return.
 const WIND_UP := 0.05
 const JAB := 0.06
-const RETURN := 0.22
+const RETURN := 0.17
 
 ## Where held items go: inside the right fist.
 var held_item_anchor: Node3D
@@ -66,15 +66,16 @@ func _ready() -> void:
 	_arms[1].add_child(held_item_anchor)
 
 
-## Starts a punch with the next arm. Returns false while still cooling down.
-func punch() -> bool:
+## Starts a punch with the next arm, then waits at least gap seconds before the next.
+## Returns false while still waiting.
+func punch(gap: float = -1.0) -> bool:
 	if _cooldown > 0.0:
 		return false
 	var arm := _next_arm
 	_next_arm = 1 - _next_arm
 	_punch_time[arm] = 0.0
 	_punch_hit_sent[arm] = false
-	_cooldown = punch_cooldown
+	_cooldown = gap if gap >= 0.0 else punch_cooldown
 	return true
 
 

@@ -155,6 +155,9 @@ func _scatter(group: String, builder: Callable, seed_base: int, count: int, rng:
 	for key in batches:
 		var instance := _add_multimesh("%s_%d_%d_%d" % [group, key.x, key.y, key.z], meshes[key.x], batches[key][0], batches[key][1], shadow)
 		if view_distance > 0.0:
+			# The "Grass & detail distance" setting scales this (see Settings).
+			instance.add_to_group("detail_props")
+			instance.set_meta("base_view_distance", view_distance)
 			instance.visibility_range_end = view_distance
 			instance.visibility_range_end_margin = 10.0
 			instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF

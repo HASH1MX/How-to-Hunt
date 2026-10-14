@@ -9,5 +9,7 @@ extends Resource
 @export var icon_color: Color = Color.WHITE
 ## The 3D model, used when the item lies in the world or is held in the hand.
 @export var mesh: Mesh
+## How much money the merchant pays for it (used in a later stage).
+@export var value: int = 0
 ## Size of the item's collision box when it lies in the world.
 @export var collision_size: Vector3 = Vector3(0.3, 0.3, 0.3)

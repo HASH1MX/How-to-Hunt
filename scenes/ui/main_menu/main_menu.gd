@@ -16,6 +16,7 @@ var _orbit_angle := 0.6
 var _fade: ColorRect
 var _loading: Label
 var _buttons: Array[Button] = []
+var _ui: CanvasLayer
 
 
 func _ready() -> void:
@@ -40,6 +41,7 @@ func _update_camera(delta: float) -> void:
 func _build_ui() -> void:
 	var ui := CanvasLayer.new()
 	add_child(ui)
+	_ui = ui
 
 	# Darker on the left so the text is easy to read over the world.
 	var gradient := Gradient.new()
@@ -58,8 +60,8 @@ func _build_ui() -> void:
 	var column := VBoxContainer.new()
 	column.set_anchors_preset(Control.PRESET_CENTER_LEFT)
 	column.offset_left = 80
-	column.offset_top = -190
-	column.offset_bottom = 190
+	column.offset_top = -220
+	column.offset_bottom = 220
 	column.add_theme_constant_override("separation", 6)
 	ui.add_child(column)
 
@@ -69,6 +71,7 @@ func _build_ui() -> void:
 	gap.custom_minimum_size = Vector2(0, 40)
 	column.add_child(gap)
 	_add_button(column, "Play", _on_play_pressed)
+	_add_button(column, "Settings", _open_settings)
 	_add_button(column, "Quit", func(): get_tree().quit())
 
 	var version := UiStyle.label("v0.1  prototype", 16, UiStyle.DIM_TEXT_COLOR)
@@ -117,6 +120,11 @@ func _add_button(parent: Control, text: String, on_pressed: Callable) -> void:
 func _grow(button: Button, amount: float) -> void:
 	button.pivot_offset = Vector2(0, button.size.y * 0.5)
 	create_tween().tween_property(button, "scale", Vector2.ONE * amount, 0.12)
+
+
+func _open_settings() -> void:
+	var settings := SettingsMenu.new()
+	_ui.add_child(settings)
 
 
 func _on_play_pressed() -> void:

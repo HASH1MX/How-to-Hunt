@@ -67,7 +67,8 @@ func advance() -> void:
 func _show_line() -> void:
 	_text.text = _lines[_index]
 	_text.visible_ratio = 0.0
-	_continue.text = "[E]  Close" if _index == _lines.size() - 1 else "[E]  Continue"
+	var key := Settings.get_binding_text("interact")
+	_continue.text = ("[%s]  Close" if _index == _lines.size() - 1 else "[%s]  Continue") % key
 
 
 func _process(delta: float) -> void:
