@@ -252,7 +252,17 @@ func _make_slot(key_text: String) -> Dictionary:
 	var key := UiStyle.label(key_text, 13)
 	key.position = Vector2(5, -1)
 	panel.add_child(key)
-	return {root = panel, style = style, icon = icon}
+
+	# Stack size, bottom right (only shown for 2 or more).
+	var count := UiStyle.label("", 18)
+	count.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	count.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	count.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	count.offset_right = -6
+	count.offset_bottom = -2
+	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(count)
+	return {root = panel, style = style, icon = icon, count = count}
 
 
 # --- Updating ----------------------------------------------------------------
@@ -279,16 +289,17 @@ func _refresh_inventory() -> void:
 	var inventory: Inventory = player.inventory
 	for i in _slots.size():
 		var selected: bool = inventory.hand_item == null and inventory.selected_slot == i
-		_show_slot(_slots[i], inventory.slots[i], selected)
+		_show_slot(_slots[i], inventory.slots[i], selected, inventory.slot_counts[i])
 	# The hand slot only appears while holding something.
 	var holding: bool = inventory.hand_item != null
 	_hand_slot.root.visible = holding
 	_hand_gap.visible = holding
-	_show_slot(_hand_slot, inventory.hand_item, true)
+	_show_slot(_hand_slot, inventory.hand_item, true, inventory.hand_count)
 	_hand_slot.style.border_color = Color(1.0, 0.82, 0.4, 0.95)
 
 
-func _show_slot(slot: Dictionary, item: ItemData, selected: bool) -> void:
+func _show_slot(slot: Dictionary, item: ItemData, selected: bool, count: int = 1) -> void:
+	slot.count.text = "x%d" % count if count > 1 else ""
 	slot.style.bg_color = Color(0, 0, 0, 0.45) if selected else Color(0, 0, 0, 0.28)
 	slot.style.border_color = Color(1, 1, 1, 0.95) if selected else Color(1, 1, 1, 0.3)
 	slot.style.set_border_width_all(2 if selected else 1)

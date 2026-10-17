@@ -35,5 +35,6 @@ func get_interact_text() -> String:
 
 
 func interact(player: Node) -> void:
-	player.inventory.pick_up(item)
-	queue_free()
+	# If the stack is full and no slot has room, the item stays where it is.
+	if player.inventory.pick_up(item):
+		queue_free()
