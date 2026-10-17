@@ -12,6 +12,7 @@ var player: Node
 var _root: Control
 var _settings: SettingsMenu
 var _info: Label
+var _copy_button: Button
 
 
 func _ready() -> void:
@@ -31,8 +32,8 @@ func _ready() -> void:
 	column.set_anchors_preset(Control.PRESET_CENTER)
 	column.offset_left = -230
 	column.offset_right = 230
-	column.offset_top = -200
-	column.offset_bottom = 200
+	column.offset_top = -230
+	column.offset_bottom = 230
 	_root.add_child(column)
 	var title := UiStyle.label("Paused", 48, Color(1.0, 0.95, 0.84))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -41,6 +42,8 @@ func _ready() -> void:
 	_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_info)
+	_copy_button = _add_button(column, "Copy join code", func():
+		DisplayServer.clipboard_set(Network.lobby_code))
 	_add_button(column, "Resume", close)
 	_add_button(column, "Settings", _open_settings)
 	_add_button(column, "Main Menu", func():
@@ -59,6 +62,7 @@ func is_open() -> bool:
 func open() -> void:
 	_info.text = _multiplayer_info()
 	_info.visible = _info.text != ""
+	_copy_button.visible = Network.transport == "steam"
 	_root.visible = true
 	_set_paused(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -86,7 +90,10 @@ func _multiplayer_info() -> String:
 	if not Network.is_online():
 		return ""
 	var text := "Players: %s" % ", ".join(Network.get_player_names())
-	if Network.is_host():
+	if Network.transport == "steam":
+		text += "
+Steam join code: %s" % Network.lobby_code
+	elif Network.is_host():
 		var addresses := Network.get_local_addresses()
 		text += "\nSame Wi-Fi/home network: %s  (port %d)" % [addresses[0] if addresses.size() > 0 else "?", Network.last_port]
 		if Network.public_ip != "":
@@ -106,10 +113,11 @@ func _set_paused(paused: bool) -> void:
 		player.in_menu = paused
 
 
-func _add_button(parent: Control, text: String, on_pressed: Callable) -> void:
+func _add_button(parent: Control, text: String, on_pressed: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(260, 48)
 	button.add_theme_font_size_override("font_size", 24)
 	button.pressed.connect(on_pressed)
 	parent.add_child(button)
+	return button

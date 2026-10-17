@@ -9,10 +9,12 @@ extends Node
 ##     actions are sent over the network.
 ##   - Each player controls their own character and tells the others where it is
 ##     (about 20 times per second). The others show it as a RemotePlayer.
-##   - The host tries to open the port on the router automatically (UPnP).
+##   - Two ways to connect: over Steam (free relay, no router setup, join by code - the
+##     main way to play over the internet) or direct by IP address (same home network,
+##     a VPN, or a forwarded port; the host tries UPnP to open the port automatically).
 ##
 ## Not done yet (later stages): animals and dropped items are not shared between
-## players, and there is no internet relay. See docs/PROGRESS.md.
+## players. See docs/PROGRESS.md.
 
 signal joined_game
 signal join_failed(reason: String)
@@ -42,6 +44,12 @@ var notice := ""
 var upnp_message := ""
 var public_ip := ""
 
+## "steam" or "enet" (direct IP) while in a session.
+var transport := ""
+## The Steam join code of the game being played (Steam sessions only).
+var lobby_code := ""
+var steam := SteamLink.new()
+
 var _world: Node3D
 var _remotes := {}
 var _upnp: UPNP
@@ -52,6 +60,13 @@ var _connecting := false
 
 func _ready() -> void:
 	_load()
+	steam.name = "SteamLink"
+	steam.protocol = PROTOCOL_VERSION
+	add_child(steam)
+	steam.lobby_hosted.connect(_on_steam_lobby_hosted)
+	steam.lobby_entered.connect(_on_steam_lobby_entered)
+	steam.failed.connect(_fail)
+	steam.invite_accepted.connect(func(lobby_id): join_steam(str(lobby_id)))
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
@@ -65,8 +80,9 @@ func _exit_tree() -> void:
 
 ## True while hosting or joined to someone else's game.
 func is_online() -> bool:
-	return multiplayer.multiplayer_peer is ENetMultiplayerPeer \
-			and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+	var peer := multiplayer.multiplayer_peer
+	return peer != null and not peer is OfflineMultiplayerPeer \
+			and peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
 
 
 func is_host() -> bool:
@@ -95,6 +111,7 @@ func host(port: int = DEFAULT_PORT) -> String:
 	if error != OK:
 		return "Could not host on port %d (is another game already using it?)" % port
 	multiplayer.multiplayer_peer = peer
+	transport = "enet"
 	players = {1: player_name}
 	last_port = port
 	_save()
@@ -112,6 +129,7 @@ func join(address: String, port: int = DEFAULT_PORT) -> void:
 		join_failed.emit("That address doesn't look right.")
 		return
 	multiplayer.multiplayer_peer = peer
+	transport = "enet"
 	last_address = address.strip_edges()
 	last_port = port
 	_save()
@@ -122,11 +140,64 @@ func join(address: String, port: int = DEFAULT_PORT) -> void:
 			_fail("Could not reach the host. Check the address, and that the host's port is open."))
 
 
+## Starts hosting a game over Steam. Returns "" if it started (the result arrives as
+## joined_game or join_failed), or a message to show.
+func host_steam(friends_only: bool) -> String:
+	leave()
+	var problem := steam.ensure_ready()
+	if problem != "":
+		return problem
+	steam.create_lobby(friends_only, MAX_PLAYERS, player_name)
+	return ""
+
+
+## Joins a game over Steam using its join code. Returns "" if it started, or a message.
+func join_steam(code: String) -> String:
+	leave()
+	var problem := steam.ensure_ready()
+	if problem != "":
+		return problem
+	if not code.strip_edges().is_valid_int():
+		return "That code doesn't look right. It is a long number."
+	_connecting = true
+	steam.join_lobby(code.strip_edges().to_int())
+	get_tree().create_timer(15.0).timeout.connect(func():
+		if _connecting:
+			_fail("Steam took too long to connect. Check the code and try again."))
+	return ""
+
+
+func _on_steam_lobby_hosted(lobby_id: int) -> void:
+	var peer := SteamMultiplayerPeer.new()
+	if peer.host_with_lobby(lobby_id) != OK:
+		_fail("Steam couldn't start the game.")
+		return
+	multiplayer.multiplayer_peer = peer
+	transport = "steam"
+	lobby_code = str(lobby_id)
+	players = {1: player_name}
+	joined_game.emit()
+
+
+func _on_steam_lobby_entered(lobby_id: int) -> void:
+	var peer := SteamMultiplayerPeer.new()
+	if peer.connect_to_lobby(lobby_id) != OK:
+		_fail("Couldn't connect to that game through Steam.")
+		return
+	multiplayer.multiplayer_peer = peer
+	transport = "steam"
+	lobby_code = str(lobby_id)
+	# From here it is the same as any join: connected_to_server, then the handshake.
+
+
 ## Leaves the session (or stops hosting) and goes back to being offline.
 func leave() -> void:
 	_connecting = false
 	_stop_upnp()
-	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
+	steam.leave_lobby()
+	transport = ""
+	lobby_code = ""
+	if multiplayer.multiplayer_peer != null and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	for remote in _remotes.values():
