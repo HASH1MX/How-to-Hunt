@@ -156,41 +156,40 @@ func _update_punch(i: int, delta: float) -> float:
 ## One arm: a sleeve, a lighter cuff and a fist with curled fingers and a thumb.
 ## Built pointing forward (-Z), back of the hand up, with the fist at the front.
 func _build_arm_mesh(side: float) -> MeshInstance3D:
-	var st := LowPoly.begin()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var sleeve := CylinderMesh.new()
 	sleeve.top_radius = 0.05
 	sleeve.bottom_radius = 0.062
 	sleeve.height = 0.42
-	sleeve.radial_segments = 8
+	sleeve.radial_segments = 20
 	sleeve.rings = 1
 	var along_z := Basis(Vector3.RIGHT, -PI * 0.5) # Cylinder's top now points to -Z.
-	LowPoly.add_shape(st, sleeve, Transform3D(along_z, Vector3(0, 0, 0.17)), sleeve_color, 0.004, 0.05, _rng)
+	LowPoly.add_smooth_shape(st, sleeve, Transform3D(along_z, Vector3(0, 0, 0.17)), sleeve_color)
 	var cuff := CylinderMesh.new()
 	cuff.top_radius = 0.054
 	cuff.bottom_radius = 0.054
 	cuff.height = 0.035
-	cuff.radial_segments = 8
+	cuff.radial_segments = 20
 	cuff.rings = 1
-	LowPoly.add_shape(st, cuff, Transform3D(along_z, Vector3(0, 0, -0.04)), sleeve_color.lightened(0.25), 0.0, 0.05, _rng)
-	# Wrist, then the back of the hand.
-	_box(st, Vector3(0.062, 0.05, 0.05), Vector3(0, 0, -0.07))
-	_box(st, Vector3(0.088, 0.05, 0.075), Vector3(0, 0.006, -0.125), Basis(Vector3.RIGHT, 0.12))
-	# Four fingers curled into the palm: a knuckle row on top, finger fronts, and tips underneath.
-	for k in 4:
-		var x := (-0.032 + k * 0.0215) * side
-		_box(st, Vector3(0.02, 0.024, 0.026), Vector3(x, 0.012, -0.17))
-		_box(st, Vector3(0.02, 0.034, 0.024), Vector3(x, -0.016, -0.181))
-		_box(st, Vector3(0.019, 0.02, 0.03), Vector3(x, -0.036, -0.162))
-	# Thumb: folded over the front of the index and middle fingers.
-	_box(st, Vector3(0.026, 0.026, 0.045), Vector3(-0.045 * side, -0.02, -0.135), Basis(Vector3.UP, 0.5 * side))
-	_box(st, Vector3(0.04, 0.022, 0.022), Vector3(-0.024 * side, -0.03, -0.172))
+	LowPoly.add_smooth_shape(st, cuff, Transform3D(along_z, Vector3(0, 0, -0.04)), sleeve_color.lightened(0.25))
+	# A clean rounded fist (like a soft cartoon mitten): wrist, one plump hand block,
+	# a row of curled fingers across the front, and a thumb on the side.
+	_box(st, Vector3(0.06, 0.055, 0.07), Vector3(0, 0, -0.075))
+	_box(st, Vector3(0.095, 0.075, 0.1), Vector3(0, 0.0, -0.135))
+	_box(st, Vector3(0.088, 0.062, 0.05), Vector3(0, -0.006, -0.18))
+	_box(st, Vector3(0.03, 0.03, 0.07), Vector3(-0.05 * side, -0.012, -0.15), Basis(Vector3.UP, 0.35 * side))
 	var instance := MeshInstance3D.new()
-	instance.mesh = LowPoly.commit(st)
+	instance.mesh = LowPoly.commit_smooth(st)
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return instance
 
 
+## A soft rounded blob filling the given box size (wrist, hand, fingers, thumb).
 func _box(st: SurfaceTool, size: Vector3, at: Vector3, rot: Basis = Basis()) -> void:
-	var box := BoxMesh.new()
-	box.size = size
-	LowPoly.add_shape(st, box, Transform3D(rot, at), skin_color, 0.003, 0.06, _rng)
+	var ball := SphereMesh.new()
+	ball.radius = 0.5
+	ball.height = 1.0
+	ball.radial_segments = 14
+	ball.rings = 8
+	LowPoly.add_smooth_shape(st, ball, Transform3D(rot * Basis.from_scale(size * 1.15), at), skin_color)

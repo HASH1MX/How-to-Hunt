@@ -8,9 +8,9 @@ extends StaticBody3D
 ## The same noise_seed always makes the same island, so every player
 ## in multiplayer will get an identical world.
 
-@export var size: float = 320.0
+@export var size: float = 540.0
 ## How many squares along each side. More = smoother hills but slower.
-@export var resolution: int = 160
+@export var resolution: int = 240
 @export var noise_seed: int = 1234
 ## Height of the sea surface. The Water node uses this too.
 @export var water_level: float = -0.6
@@ -18,18 +18,18 @@ extends StaticBody3D
 @export_group("Forest")
 @export var max_height: float = 5.0
 ## Flat clearing in the middle where the plane crashed and players spawn.
-@export var flat_radius: float = 22.0
+@export var flat_radius: float = 26.0
 
 @export_group("Mountains")
 ## Distance from the middle to the top of the mountain ring.
-@export var mountain_radius: float = 96.0
+@export var mountain_radius: float = 154.0
 ## How wide the mountains are. Wider = gentler slopes, easier to climb.
-@export var mountain_width: float = 36.0
-@export var mountain_height: float = 20.0
+@export var mountain_width: float = 56.0
+@export var mountain_height: float = 26.0
 
 @export_group("Coast")
 ## Distance from the middle where the beach meets the sea.
-@export var coast_radius: float = 134.0
+@export var coast_radius: float = 214.0
 @export var sea_depth: float = 8.0
 
 @export_group("Colors")
@@ -57,7 +57,7 @@ func _ready() -> void:
 func get_height(x: float, z: float) -> float:
 	var dist := Vector2(x, z).length()
 	# Noise makes the mountain ring and coastline wobbly instead of perfect circles.
-	var wobbly_dist := dist + _shape_noise.get_noise_2d(x, z) * 14.0
+	var wobbly_dist := dist + _shape_noise.get_noise_2d(x, z) * 22.0
 
 	# Forest hills, flat in the clearing. Hills only go up (0 to max_height),
 	# so the forest never dips below sea level and fills with water.
@@ -105,14 +105,21 @@ func generate() -> void:
 
 	var step := size / resolution
 	var half := size * 0.5
+	# Work out each grid corner's height once (every corner is shared by 4 squares).
+	var corners := resolution + 1
+	var points := PackedVector3Array()
+	points.resize(corners * corners)
+	for zi in corners:
+		for xi in corners:
+			var x := -half + xi * step
+			var z := -half + zi * step
+			points[zi * corners + xi] = Vector3(x, get_height(x, z), z)
 	for zi in resolution:
 		for xi in resolution:
-			var x0 := -half + xi * step
-			var z0 := -half + zi * step
-			var p00 := _point(x0, z0)
-			var p10 := _point(x0 + step, z0)
-			var p01 := _point(x0, z0 + step)
-			var p11 := _point(x0 + step, z0 + step)
+			var p00 := points[zi * corners + xi]
+			var p10 := points[zi * corners + xi + 1]
+			var p01 := points[(zi + 1) * corners + xi]
+			var p11 := points[(zi + 1) * corners + xi + 1]
 			_add_triangle(st, p00, p10, p01)
 			_add_triangle(st, p10, p11, p01)
 

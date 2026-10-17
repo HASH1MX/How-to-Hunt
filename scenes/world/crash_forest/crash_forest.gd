@@ -12,6 +12,8 @@ const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 @onready var spawn_point: Marker3D = $SpawnPoint
 @onready var water: Water = $Water
 
+var _started := false
+
 
 func _ready() -> void:
 	# Let the graphics settings control this level's sky effects, shadows and grass distance.
@@ -25,8 +27,16 @@ func _ready() -> void:
 	for child in get_children():
 		if child is NPC:
 			child.position.y = $Terrain.get_height(child.position.x, child.position.z) - 0.03
-	if not spawn_player:
+	if spawn_player:
+		start_game()
+
+
+## Puts the player, HUD and pause menu into the world. The main menu calls this
+## when Play is pressed, so the world it already built is reused (no second load).
+func start_game() -> void:
+	if _started:
 		return
+	_started = true
 	var player := PLAYER_SCENE.instantiate()
 	# Set the position before adding, so the player remembers it as its respawn point.
 	player.position = spawn_point.position

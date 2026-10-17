@@ -15,17 +15,17 @@ extends Node3D
 @export var no_grass_radius: float = 11.0
 
 @export_group("Amounts")
-@export var pine_count: int = 520
-@export var leafy_count: int = 140
-@export var birch_count: int = 80
-@export var bush_count: int = 320
-@export var rock_count: int = 140
-@export var log_count: int = 35
-@export var stump_count: int = 40
-@export var flower_count: int = 700
-@export var mushroom_count: int = 200
-@export var pebble_count: int = 400
-@export var grass_count: int = 42000
+@export var pine_count: int = 1300
+@export var leafy_count: int = 350
+@export var birch_count: int = 200
+@export var bush_count: int = 800
+@export var rock_count: int = 350
+@export var log_count: int = 90
+@export var stump_count: int = 100
+@export var flower_count: int = 1750
+@export var mushroom_count: int = 500
+@export var pebble_count: int = 1000
+@export var grass_count: int = 100000
 
 const MODEL_VARIANTS := 4
 const CHUNK_SIZE := 25.0

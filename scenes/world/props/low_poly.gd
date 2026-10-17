@@ -51,6 +51,35 @@ static func add_shape(st: SurfaceTool, shape: PrimitiveMesh, xform: Transform3D,
 			st.add_vertex(xform * v)
 
 
+## Adds a shape with soft, rounded shading (characters and animals): uses the shape's
+## own smooth normals, so spheres and capsules look round instead of faceted
+## while boxes keep their crisp edges. No wobble. Finish with commit_smooth().
+static func add_smooth_shape(st: SurfaceTool, shape: PrimitiveMesh, xform: Transform3D, color: Color,
+		shade_variation: float = 0.0, rng: RandomNumberGenerator = null) -> void:
+	var arrays := shape.get_mesh_arrays()
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	if indices.is_empty():
+		indices = PackedInt32Array(range(verts.size()))
+	var normal_basis := xform.basis.inverse().transposed()
+	var shade := 1.0
+	if rng != null and shade_variation > 0.0:
+		shade += rng.randf_range(-shade_variation, shade_variation)
+	st.set_color(Color(color.r * shade, color.g * shade, color.b * shade))
+	for i in indices.size():
+		var index := indices[i]
+		st.set_normal((normal_basis * normals[index]).normalized())
+		st.add_vertex(xform * verts[index])
+
+
+## Finishes a mesh made with add_smooth_shape().
+static func commit_smooth(st: SurfaceTool, double_sided: bool = false) -> ArrayMesh:
+	var mesh := st.commit()
+	mesh.surface_set_material(0, get_material(double_sided))
+	return mesh
+
+
 ## Finishes the mesh and gives it the shared low-poly material.
 static func commit(st: SurfaceTool, double_sided: bool = false) -> ArrayMesh:
 	st.generate_normals()

@@ -22,7 +22,7 @@ func _init() -> void:
 	display_name = "Chicken"
 	max_health = 20.0
 	walk_speed = 1.0
-	flee_speed = 4.2
+	flee_speed = 3.8
 	skittish_distance = 0.0
 	flee_time = 3.0
 	loot_id = &"feathers"

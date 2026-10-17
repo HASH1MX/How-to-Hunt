@@ -19,7 +19,7 @@ func _init() -> void:
 	display_name = "Squirrel"
 	max_health = 20.0
 	walk_speed = 1.8
-	flee_speed = 6.0
+	flee_speed = 5.2
 	skittish_distance = 5.0
 	flee_time = 3.0
 	loot_id = &"squirrel_tail"

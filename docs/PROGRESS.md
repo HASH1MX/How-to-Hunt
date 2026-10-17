@@ -86,6 +86,8 @@
 | Physics layers: 1 world, 3 items, 4 interactables | The E ray only finds things you can use. |
 | Settings autoload (`Settings`), saved in `user://settings.cfg` | One place for all options; prompts show the player's own key names. |
 | Animals extend one `Animal` base class | Each species only defines its stats, model and animation. |
+| Characters, animals and first-person arms use smooth rounded shading (`LowPoly.add_smooth_shape`) | The faceted/boxy look read as pixelated; How to Fish characters are soft and round. Terrain and props stay faceted. |
+| Island is 540 m wide (coast radius 214, mountains at 154) | Bigger map, props and animals scaled up about 2.5x to match. |
 | `build/` is not stored in Git | Builds are large; they will be shared through GitHub Releases. |
 
 ## How to export (command line)

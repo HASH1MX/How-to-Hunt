@@ -5,16 +5,16 @@ extends Node3D
 ## The first island has mostly small, easy animals and only a few deer.
 
 ## How many of each animal live on the island at once.
-@export var rabbits := 14
-@export var chickens := 10
-@export var squirrels := 8
-@export var deer := 4
+@export var rabbits := 30
+@export var chickens := 22
+@export var squirrels := 18
+@export var deer := 9
 ## Seconds before a hunted animal is replaced.
 @export var respawn_delay := 60.0
 ## Animals live between these distances from the middle of the island
 ## (inside the mountains, but not right on top of the crash site).
 @export var min_distance := 16.0
-@export var max_distance := 82.0
+@export var max_distance := 131.0
 ## New animals never appear closer than this to a player.
 @export var min_distance_from_players := 25.0
 

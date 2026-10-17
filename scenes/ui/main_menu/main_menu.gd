@@ -2,7 +2,6 @@ extends Node3D
 ## The start page. The real Crash Forest is shown in the background with a
 ## camera slowly circling the crashed plane, and the title and buttons on top.
 
-const GAME_SCENE := "res://scenes/world/crash_forest/crash_forest.tscn"
 ## The point the camera circles around (the crash site).
 const ORBIT_CENTER := Vector3(-1.0, 1.5, -11.0)
 const ORBIT_RADIUS := 21.0
@@ -130,9 +129,26 @@ func _open_settings() -> void:
 func _on_play_pressed() -> void:
 	for button in _buttons:
 		button.disabled = true
+	# The world behind the menu is already built, so just fade out and drop the player in.
 	var tween := create_tween()
-	tween.tween_property(_fade, "color:a", 1.0, 0.6)
-	tween.tween_callback(func(): _loading.visible = true)
-	# Wait one more frame so "Loading..." appears before the world builds.
-	tween.tween_interval(0.05)
-	tween.tween_callback(func(): get_tree().change_scene_to_file(GAME_SCENE))
+	tween.tween_property(_fade, "color:a", 1.0, 0.35)
+	tween.tween_callback(_start_game)
+
+
+func _start_game() -> void:
+	set_process(false)
+	$World.start_game()
+	camera.queue_free()
+	_ui.queue_free()
+	# Fade back in on a separate layer that outlives the menu UI.
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	var fade := ColorRect.new()
+	fade.color = Color(0, 0, 0, 1)
+	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(fade)
+	add_child(layer)
+	var tween := create_tween()
+	tween.tween_property(fade, "color:a", 0.0, 0.5)
+	tween.tween_callback(layer.queue_free)

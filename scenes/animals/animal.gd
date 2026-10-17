@@ -236,29 +236,38 @@ func _pivot(parent: Node3D, at: Vector3) -> Node3D:
 
 
 func _begin() -> SurfaceTool:
-	return LowPoly.begin()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	return st
 
 
 ## Finishes a mesh and attaches it to `parent`.
 func _finish(st: SurfaceTool, parent: Node3D) -> void:
 	var mesh := MeshInstance3D.new()
-	mesh.mesh = LowPoly.commit(st)
+	mesh.mesh = LowPoly.commit_smooth(st)
 	parent.add_child(mesh)
 
 
-func _sphere(st: SurfaceTool, radius: float, at: Vector3, stretch: Vector3, color: Color, segments: int = 7, rings: int = 4) -> void:
+## A smooth rounded ball (stretched into an egg shape with `stretch`).
+func _sphere(st: SurfaceTool, radius: float, at: Vector3, stretch: Vector3, color: Color, segments: int = 14, rings: int = 8) -> void:
 	var shape := SphereMesh.new()
 	shape.radius = radius
 	shape.height = radius * 2.0
-	shape.radial_segments = segments
-	shape.rings = rings
-	LowPoly.add_shape(st, shape, Transform3D(Basis.from_scale(stretch), at), color, radius * 0.05, 0.06, _rng)
+	shape.radial_segments = maxi(segments, 14)
+	shape.rings = maxi(rings, 8)
+	LowPoly.add_smooth_shape(st, shape, Transform3D(Basis.from_scale(stretch), at), color, 0.03, _rng)
 
 
+## Despite the name, this makes a soft rounded blob that fills the given box size
+## (legs, ears, paws and beaks look rounded instead of blocky).
 func _box(st: SurfaceTool, size: Vector3, at: Vector3, color: Color, rot: Basis = Basis()) -> void:
-	var shape := BoxMesh.new()
-	shape.size = size
-	LowPoly.add_shape(st, shape, Transform3D(rot, at), color, 0.0, 0.06, _rng)
+	var shape := SphereMesh.new()
+	shape.radius = 0.5
+	shape.height = 1.0
+	shape.radial_segments = 12
+	shape.rings = 7
+	var blob := Basis.from_scale(size * 1.12)
+	LowPoly.add_smooth_shape(st, shape, Transform3D(rot * blob, at), color, 0.03, _rng)
 
 
 ## A cylinder standing along Y, centred on `at`.
@@ -267,6 +276,6 @@ func _cylinder(st: SurfaceTool, top: float, bottom: float, height: float, at: Ve
 	shape.top_radius = top
 	shape.bottom_radius = bottom
 	shape.height = height
-	shape.radial_segments = 6
+	shape.radial_segments = 12
 	shape.rings = 1
-	LowPoly.add_shape(st, shape, Transform3D(rot, at), color, 0.0, 0.06, _rng)
+	LowPoly.add_smooth_shape(st, shape, Transform3D(rot, at), color, 0.03, _rng)

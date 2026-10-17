@@ -24,9 +24,9 @@ func _init() -> void:
 	display_name = "Deer"
 	max_health = 80.0
 	walk_speed = 1.4
-	flee_speed = 9.0
+	flee_speed = 7.0
 	skittish_distance = 10.0
-	flee_time = 5.0
+	flee_time = 3.5
 	loot_id = &"deer_hide"
 	body_size = Vector3(0.5, 1.3, 1.2)
 

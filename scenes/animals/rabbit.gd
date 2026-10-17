@@ -18,9 +18,9 @@ func _init() -> void:
 	display_name = "Rabbit"
 	max_health = 30.0
 	walk_speed = 1.6
-	flee_speed = 6.5
+	flee_speed = 5.4
 	skittish_distance = 5.0
-	flee_time = 3.5
+	flee_time = 2.5
 	loot_id = &"rabbit_pelt"
 	body_size = Vector3(0.32, 0.34, 0.48)
 
