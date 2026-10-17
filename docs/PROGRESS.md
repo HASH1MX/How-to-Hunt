@@ -88,6 +88,7 @@
 | Animals extend one `Animal` base class | Each species only defines its stats, model and animation. |
 | Characters, animals and first-person arms use smooth rounded shading (`LowPoly.add_smooth_shape`) | The faceted/boxy look read as pixelated; How to Fish characters are soft and round. Terrain and props stay faceted. |
 | Island is 540 m wide (coast radius 214, mountains at 154) | Bigger map, props and animals scaled up about 2.5x to match. |
+| Multiplayer: Godot ENet, host = server, friends join by IP (`Network` autoload) | Free, no extra service. Each player runs their own world from fixed seeds and sends only their position/actions (20/s). Host tries UPnP to open the router port. Stage A done: connect, spawn, sync, names, join/leave. Animals and dropped items are NOT shared yet; no internet relay yet. |
 | `build/` is not stored in Git | Builds are large; they will be shared through GitHub Releases. |
 
 ## How to export (command line)

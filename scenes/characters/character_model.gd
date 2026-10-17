@@ -42,6 +42,17 @@ var look_target: Variant = null
 ## True while talking: nods the head and waves a hand.
 var talking := false
 
+## For a character that is another player in multiplayer: it is posed from what the
+## network says (below) instead of idling, and looks up and down with remote_pitch.
+var remote_controlled := false
+var remote_pitch := 0.0
+## Horizontal speed in m/s. Above zero the character walks (legs and arms swing).
+var move_speed := 0.0
+var crouching := false
+var sprinting := false
+var airborne := false
+var swimming := false
+
 const LEG_UPPER := 0.45
 const LEG_LOWER := 0.42
 const FOOT_HEIGHT := 0.1
@@ -49,6 +60,7 @@ const HIP_HEIGHT := LEG_UPPER + LEG_LOWER + FOOT_HEIGHT
 const TORSO_HEIGHT := 0.56
 const ARM_LENGTH := 0.6
 const SEAT_HEIGHT := 0.5
+const PUNCH_DURATION := 0.28
 
 var _hips: Node3D
 var _torso: Node3D
@@ -58,6 +70,12 @@ var _legs: Array[Node3D] = []
 var _knees: Array[Node3D] = []
 var _time := 0.0
 var _talk_amount := 0.0
+var _walk_phase := 0.0
+var _swing := 0.0
+var _crouch_amount := 0.0
+var _air_amount := 0.0
+var _punch_time := -1.0
+var _punch_arm := 0
 var _rng := RandomNumberGenerator.new()
 
 
@@ -198,6 +216,12 @@ func _build_legs() -> void:
 
 # --- Posing and animation -------------------------------------------------------
 
+## Swings an arm forward in a punch. Alternates between the left and right arm.
+func play_punch() -> void:
+	_punch_time = 0.0
+	_punch_arm = 1 - _punch_arm
+
+
 func _apply_base_pose() -> void:
 	if _hips == null:
 		return
@@ -223,15 +247,54 @@ func _process(delta: float) -> void:
 	var breath := sin(_time * 1.8)
 	_torso.scale = Vector3(1.0 + breath * 0.008, 1.0 + breath * 0.012, 1.0 + breath * 0.008)
 	_torso.rotation.x = (0.08 if sitting else 0.02) + breath * 0.01
+	if _punch_time >= 0.0:
+		_punch_time += delta
+		if _punch_time > PUNCH_DURATION:
+			_punch_time = -1.0
 
+	_animate_locomotion(delta)
 	_animate_head(delta)
 	_animate_arms()
+
+
+## Walking, crouching and jumping poses (not used while sitting).
+func _animate_locomotion(delta: float) -> void:
+	if sitting:
+		return
+	var blend := 1.0 - exp(-10.0 * delta)
+	_crouch_amount = lerpf(_crouch_amount, 1.0 if crouching else 0.0, blend)
+	_air_amount = lerpf(_air_amount, 1.0 if airborne else 0.0, blend)
+	var intensity := clampf(move_speed / 4.5, 0.0, 1.5)
+	if crouching:
+		intensity *= 0.8
+	if swimming:
+		intensity = 0.6
+		move_speed = maxf(move_speed, 1.5)
+	_swing = lerpf(_swing, 0.0 if airborne else intensity, blend)
+	_walk_phase += delta * clampf(move_speed, 0.0, 9.0) * 1.7
+	var thigh_amp := 0.7 * minf(_swing, 1.3)
+	var bob := absf(cos(_walk_phase)) * 0.035 * minf(_swing, 1.0)
+	for i in 2:
+		var angle := _walk_phase + PI * i
+		var thigh := sin(angle) * thigh_amp
+		var knee := -maxf(0.0, cos(angle)) * 0.9 * minf(_swing, 1.2)
+		# Crouching: knees bent, hips low. Jumping: one leg forward, one back, knees tucked.
+		thigh += 0.7 * _crouch_amount + (0.55 if i == 0 else -0.35) * _air_amount
+		knee += -1.3 * _crouch_amount - 0.5 * _air_amount
+		_legs[i].rotation = Vector3(thigh, 0, 0.0)
+		_knees[i].rotation = Vector3(knee, 0, 0)
+	_hips.position = Vector3(0, lerpf(HIP_HEIGHT, 0.8, _crouch_amount) + bob, 0)
+	var lean := -0.28 * _crouch_amount - (0.12 if sprinting else 0.0) * minf(_swing, 1.0)
+	_torso.rotation.x += lean
 
 
 func _animate_head(delta: float) -> void:
 	var target_yaw := sin(_time * 0.4) * 0.35 # Idle: slowly look around.
 	var target_pitch := sin(_time * 0.27) * 0.06
-	if look_target != null:
+	if remote_controlled:
+		target_yaw = 0.0
+		target_pitch = remote_pitch
+	if look_target != null and not remote_controlled:
 		var local: Vector3 = _torso.global_transform.affine_inverse() * (look_target as Vector3)
 		var from_head := local - _head.position - Vector3(0, 0.3, 0)
 		target_yaw = clampf(atan2(-from_head.x, -from_head.z), -1.2, 1.2)
@@ -252,6 +315,12 @@ func _animate_arms() -> void:
 			shoulder.rotation = Vector3(0.75, 0, -0.12 * side)
 		else:
 			shoulder.rotation = Vector3(sin(_time * 1.8 + i) * 0.02, 0, 0.07 * side)
+			# Arms swing opposite to the legs while walking, and go up when jumping.
+			shoulder.rotation.x += sin(_walk_phase + PI * (1 - i)) * 0.75 * minf(_swing, 1.3)
+			shoulder.rotation.x += 0.9 * _air_amount + 0.35 * _crouch_amount
+			shoulder.rotation.z += 0.5 * side * _air_amount
+		if _punch_time >= 0.0 and i == _punch_arm:
+			shoulder.rotation.x += 1.6 * sin(_punch_time / PUNCH_DURATION * PI)
 	# Talking: the right arm comes up and waves around while explaining.
 	var wave := _talk_amount * (1.0 + sin(_time * 3.5) * 0.25)
 	_shoulders[1].rotation.x += wave * 0.9

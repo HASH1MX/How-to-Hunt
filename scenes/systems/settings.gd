@@ -196,9 +196,9 @@ func register_world(environment: Environment, sun: DirectionalLight3D) -> void:
 func apply_all() -> void:
 	_apply_display()
 	_apply_viewport()
-	_apply_shadows()
 	# Forget worlds that were closed (e.g. leaving the main menu).
 	_worlds.assign(_worlds.filter(func(w): return is_instance_valid(w.sun)))
+	_apply_shadows()
 	for world in _worlds:
 		var env: Environment = world.environment
 		env.ssao_enabled = ambient_occlusion

@@ -18,11 +18,6 @@ var _started := false
 func _ready() -> void:
 	# Let the graphics settings control this level's sky effects, shadows and grass distance.
 	Settings.register_world($WorldEnvironment.environment, $Sun)
-	# Animals: rabbits, chickens, squirrels and a few deer.
-	var animals := AnimalSpawner.new()
-	animals.name = "Animals"
-	animals.terrain = $Terrain
-	add_child(animals)
 	# Stand NPCs on the ground, wherever the terrain's little bumps are.
 	for child in get_children():
 		if child is NPC:
@@ -37,9 +32,21 @@ func start_game() -> void:
 	if _started:
 		return
 	_started = true
+	# Animals: rabbits, chickens, squirrels and a few deer. In a multiplayer game only
+	# the host has them for now (sharing animals between players comes in a later stage).
+	if not Network.is_online() or Network.is_host():
+		var animals := AnimalSpawner.new()
+		animals.name = "Animals"
+		animals.terrain = $Terrain
+		add_child(animals)
 	var player := PLAYER_SCENE.instantiate()
+	player.name = "LocalPlayer"
 	# Set the position before adding, so the player remembers it as its respawn point.
 	player.position = spawn_point.position
+	if Network.is_online():
+		# Don't all appear in exactly the same spot.
+		var angle := randf() * TAU
+		player.position += Vector3(cos(angle), 0.0, sin(angle)) * randf_range(1.5, 3.5)
 	player.rotation = spawn_point.rotation
 	add_child(player)
 	player.water_level = water.get_level()
@@ -47,6 +54,13 @@ func start_game() -> void:
 	var hud := HUD.new()
 	hud.player = player
 	add_child(hud)
+	if Network.is_online():
+		var sync := PlayerNetSync.new()
+		sync.name = "NetSync"
+		sync.player = player
+		player.add_child(sync)
+		add_child(NetNotice.new())
+		Network.world_ready(self)
 	var pause_menu := PauseMenu.new()
 	pause_menu.player = player
 	add_child(pause_menu)

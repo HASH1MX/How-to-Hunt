@@ -24,6 +24,14 @@ func _ready() -> void:
 	_update_camera(0.0)
 	# Fade in from black.
 	create_tween().tween_property(_fade, "color:a", 0.0, 1.0)
+	if Network.notice != "":
+		var notice := UiStyle.label(Network.notice, 26, UiStyle.TITLE_COLOR)
+		notice.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		notice.offset_top = 40
+		notice.offset_left = -200
+		_ui.add_child(notice)
+		Network.notice = ""
+	_run_command_line.call_deferred()
 
 
 func _process(delta: float) -> void:
@@ -70,6 +78,7 @@ func _build_ui() -> void:
 	gap.custom_minimum_size = Vector2(0, 40)
 	column.add_child(gap)
 	_add_button(column, "Play", _on_play_pressed)
+	_add_button(column, "Multiplayer", _open_multiplayer)
 	_add_button(column, "Settings", _open_settings)
 	_add_button(column, "Quit", func(): get_tree().quit())
 
@@ -119,6 +128,34 @@ func _add_button(parent: Control, text: String, on_pressed: Callable) -> void:
 func _grow(button: Button, amount: float) -> void:
 	button.pivot_offset = Vector2(0, button.size.y * 0.5)
 	create_tween().tween_property(button, "scale", Vector2.ONE * amount, 0.12)
+
+
+func _open_multiplayer() -> void:
+	var menu := MultiplayerMenu.new()
+	menu.started.connect(_on_play_pressed)
+	_ui.add_child(menu)
+
+
+## Handy for testing two copies of the game on one computer:
+##   --host            starts hosting straight away
+##   --join=ADDRESS    joins that address straight away
+##   --name=NAME       sets the player name
+func _run_command_line() -> void:
+	var host := false
+	var join := ""
+	for arg in OS.get_cmdline_user_args():
+		if arg == "--host":
+			host = true
+		elif arg.begins_with("--join="):
+			join = arg.trim_prefix("--join=")
+		elif arg.begins_with("--name="):
+			Network.set_player_name(arg.trim_prefix("--name="))
+	if host:
+		if Network.host() == "":
+			_on_play_pressed()
+	elif join != "":
+		Network.joined_game.connect(_on_play_pressed, CONNECT_ONE_SHOT)
+		Network.join(join)
 
 
 func _open_settings() -> void:
