@@ -27,29 +27,35 @@ func _init() -> void:
 
 func _build_model(root: Node3D) -> void:
 	var fur: Color = FUR_COLORS[_rng.randi() % FUR_COLORS.size()]
+	var paw := fur.darkened(0.1)
 	_body = _pivot(root, Vector3.ZERO)
 	var st := _begin()
-	_sphere(st, 0.17, Vector3(0, 0.17, 0.04), Vector3(1.0, 0.92, 1.3), fur)
-	_sphere(st, 0.12, Vector3(0, 0.11, -0.02), Vector3(1.0, 0.8, 1.2), fur.lightened(0.25)) # Lighter belly.
-	_sphere(st, 0.065, Vector3(0, 0.22, 0.24), Vector3.ONE, Color(0.96, 0.95, 0.93)) # Fluffy tail.
+	_sphere(st, 0.17, Vector3(0, 0.17, 0.04), Vector3(1.0, 0.95, 1.35), fur) # Body.
+	_sphere(st, 0.12, Vector3(0, 0.11, -0.01), Vector3(1.0, 0.8, 1.3), fur.lightened(0.25)) # Lighter belly.
+	_sphere(st, 0.13, Vector3(0, 0.2, -0.12), Vector3(0.95, 1.0, 1.0), fur) # Chest, blends into the neck.
+	_sphere(st, 0.065, Vector3(0, 0.22, 0.25), Vector3.ONE, Color(0.96, 0.95, 0.93)) # Fluffy tail.
 	for side in [-1.0, 1.0]:
-		_box(st, Vector3(0.065, 0.045, 0.17), Vector3(0.09 * side, 0.025, 0.1), fur.darkened(0.12)) # Back feet.
-		_box(st, Vector3(0.045, 0.1, 0.045), Vector3(0.06 * side, 0.05, -0.12), fur) # Front paws.
+		_sphere(st, 0.1, Vector3(0.11 * side, 0.14, 0.11), Vector3(0.7, 1.1, 1.3), fur) # Haunch.
+		_box(st, Vector3(0.07, 0.05, 0.19), Vector3(0.1 * side, 0.025, 0.06), paw) # Back foot, under the haunch.
+		_limb(st, Vector3(0.065 * side, 0.15, -0.1), Vector3(0.06 * side, 0.03, -0.15), 0.04, 0.03, fur) # Front leg.
+		_box(st, Vector3(0.05, 0.035, 0.07), Vector3(0.06 * side, 0.02, -0.17), paw) # Front paw.
 	_finish(st, _body)
 
 	_head = _pivot(_body, Vector3(0, 0.27, -0.15))
 	st = _begin()
 	_sphere(st, 0.1, Vector3(0, 0, -0.03), Vector3(0.95, 0.95, 1.12), fur)
+	_sphere(st, 0.06, Vector3(0, -0.03, -0.1), Vector3(1.0, 0.8, 1.0), fur.lightened(0.2)) # Muzzle.
 	for side in [-1.0, 1.0]:
-		_sphere(st, 0.02, Vector3(0.06 * side, 0.03, -0.09), Vector3.ONE, Color(0.06, 0.05, 0.05), 6, 3)
-	_sphere(st, 0.017, Vector3(0, -0.005, -0.145), Vector3.ONE, PINK, 6, 3)
+		_sphere(st, 0.021, Vector3(0.062 * side, 0.03, -0.085), Vector3.ONE, Color(0.06, 0.05, 0.05))
+		_sphere(st, 0.007, Vector3(0.066 * side, 0.037, -0.103), Vector3.ONE, Color(1, 1, 1))
+	_sphere(st, 0.018, Vector3(0, -0.012, -0.155), Vector3.ONE, PINK)
 	_finish(st, _head)
 	for side in [-1.0, 1.0]:
-		var ear := _pivot(_head, Vector3(0.04 * side, 0.07, 0.02))
-		ear.rotation.z = -0.15 * side
+		var ear := _pivot(_head, Vector3(0.045 * side, 0.06, 0.02))
+		ear.rotation.z = -0.18 * side
 		st = _begin()
-		_box(st, Vector3(0.05, 0.17, 0.022), Vector3(0, 0.085, 0), fur)
-		_box(st, Vector3(0.028, 0.13, 0.006), Vector3(0, 0.085, -0.013), PINK)
+		_limb(st, Vector3(0, 0, 0), Vector3(0, 0.17, 0), 0.03, 0.022, fur)
+		_limb(st, Vector3(0, 0.02, -0.012), Vector3(0, 0.15, -0.012), 0.017, 0.012, PINK)
 		_finish(st, ear)
 		_ears.append(ear)
 

@@ -27,31 +27,36 @@ func _init() -> void:
 
 
 func _build_model(root: Node3D) -> void:
+	var dark := FUR.darkened(0.12)
 	_body = _pivot(root, Vector3(0, 0, 0))
 	var st := _begin()
-	_sphere(st, 0.09, Vector3(0, 0.1, 0.02), Vector3(1.0, 1.0, 1.4), FUR)
-	_sphere(st, 0.06, Vector3(0, 0.08, -0.04), Vector3(1.0, 1.0, 1.2), BELLY)
+	_sphere(st, 0.09, Vector3(0, 0.1, 0.02), Vector3(1.0, 1.0, 1.4), FUR) # Body.
+	_sphere(st, 0.06, Vector3(0, 0.085, -0.04), Vector3(1.0, 1.0, 1.2), BELLY) # Belly.
+	_sphere(st, 0.075, Vector3(0, 0.13, -0.07), Vector3.ONE, FUR) # Chest, blends into the neck.
 	for side in [-1.0, 1.0]:
-		_box(st, Vector3(0.04, 0.03, 0.09), Vector3(0.05 * side, 0.015, 0.06), FUR.darkened(0.1))
-		_box(st, Vector3(0.025, 0.06, 0.025), Vector3(0.035 * side, 0.03, -0.07), FUR)
+		_sphere(st, 0.06, Vector3(0.06 * side, 0.07, 0.07), Vector3(0.75, 1.0, 1.3), FUR) # Haunch.
+		_box(st, Vector3(0.04, 0.03, 0.1), Vector3(0.055 * side, 0.015, 0.05), dark) # Back foot.
+		_limb(st, Vector3(0.04 * side, 0.1, -0.07), Vector3(0.035 * side, 0.02, -0.095), 0.022, 0.016, FUR) # Front leg.
+		_box(st, Vector3(0.03, 0.02, 0.04), Vector3(0.035 * side, 0.012, -0.105), dark) # Front paw.
 	_finish(st, _body)
 
 	_head = _pivot(_body, Vector3(0, 0.16, -0.09))
 	st = _begin()
 	_sphere(st, 0.065, Vector3(0, 0, -0.02), Vector3(0.95, 0.95, 1.15), FUR)
+	_sphere(st, 0.035, Vector3(0, -0.02, -0.075), Vector3(1.0, 0.8, 1.0), BELLY) # Muzzle.
 	for side in [-1.0, 1.0]:
-		_box(st, Vector3(0.022, 0.045, 0.012), Vector3(0.035 * side, 0.065, 0.01), FUR.darkened(0.1))
-		_sphere(st, 0.013, Vector3(0.038 * side, 0.02, -0.06), Vector3.ONE, Color(0.05, 0.05, 0.05), 6, 3)
-	_sphere(st, 0.01, Vector3(0, -0.005, -0.095), Vector3.ONE, Color(0.25, 0.15, 0.12), 6, 3)
+		_sphere(st, 0.022, Vector3(0.04 * side, 0.07, 0.0), Vector3(0.6, 1.4, 0.7), dark) # Ears.
+		_sphere(st, 0.015, Vector3(0.04 * side, 0.02, -0.055), Vector3.ONE, Color(0.05, 0.05, 0.05))
+	_sphere(st, 0.011, Vector3(0, -0.012, -0.105), Vector3.ONE, Color(0.25, 0.15, 0.12))
 	_finish(st, _head)
 
-	# Bushy tail curling up over the back.
-	_tail = _pivot(_body, Vector3(0, 0.1, 0.13))
+	# Bushy tail: one connected S-curve rising up behind the back, fatter towards the tip.
+	_tail = _pivot(_body, Vector3(0, 0.08, 0.1))
 	st = _begin()
-	for i in 5:
-		var t := i / 4.0
-		var at := Vector3(0, sin(t * 2.4) * 0.2, cos(t * 2.4) * 0.07 + t * 0.02)
-		_sphere(st, lerpf(0.045, 0.07, t), at, Vector3.ONE, FUR.lightened(0.05 * i), 7, 4)
+	var curve := [Vector3(0, 0.0, 0.0), Vector3(0, 0.06, 0.1), Vector3(0, 0.17, 0.14), Vector3(0, 0.27, 0.1), Vector3(0, 0.33, 0.0)]
+	var radii := [0.035, 0.065, 0.09, 0.1, 0.08]
+	for i in 4:
+		_limb(st, curve[i], curve[i + 1], radii[i], radii[i + 1], FUR.lightened(0.04 * i))
 	_finish(st, _tail)
 
 

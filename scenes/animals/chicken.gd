@@ -32,36 +32,41 @@ func _init() -> void:
 func _build_model(root: Node3D) -> void:
 	var feathers: Color = FEATHER_COLORS[_rng.randi() % FEATHER_COLORS.size()]
 	for side in [-1.0, 1.0]:
-		var leg := _pivot(root, Vector3(0.055 * side, 0.17, 0.01))
+		var leg := _pivot(root, Vector3(0.06 * side, 0.2, 0.01))
 		var st := _begin()
-		_cylinder(st, 0.012, 0.012, 0.16, Vector3(0, -0.08, 0), ORANGE)
-		_box(st, Vector3(0.06, 0.012, 0.07), Vector3(0, -0.165, -0.015), ORANGE)
+		_limb(st, Vector3(0, 0.02, 0), Vector3(0, -0.2, 0), 0.02, 0.013, ORANGE)
+		for toe in [-0.4, 0.0, 0.4]:
+			_limb(st, Vector3(0, -0.195, 0), Vector3(sin(toe) * 0.05, -0.195, -cos(toe) * 0.06), 0.011, 0.008, ORANGE)
 		_finish(st, leg)
 		_legs.append(leg)
 
 	_body = _pivot(root, Vector3(0, 0.16, 0))
 	var st := _begin()
-	_sphere(st, 0.15, Vector3(0, 0.12, 0.02), Vector3(0.88, 0.85, 1.12), feathers)
-	# Tail feathers sticking up at the back.
-	_box(st, Vector3(0.11, 0.15, 0.05), Vector3(0, 0.22, 0.15), feathers.darkened(0.08), Basis(Vector3.RIGHT, 0.5))
+	_sphere(st, 0.15, Vector3(0, 0.13, 0.02), Vector3(0.9, 0.9, 1.2), feathers) # Body.
+	_sphere(st, 0.1, Vector3(0, 0.17, -0.1), Vector3(0.95, 1.0, 0.95), feathers.lightened(0.05)) # Plump chest.
+	# Tail feathers fanned up and back, attached to the rump.
+	for i in 3:
+		var angle := (i - 1) * 0.7
+		_limb(st, Vector3(0, 0.15, 0.14), Vector3(sin(angle) * 0.14, 0.28, 0.19), 0.05, 0.03, feathers.darkened(0.06 + 0.03 * i))
 	_finish(st, _body)
 	for side in [-1.0, 1.0]:
-		var wing := _pivot(_body, Vector3(0.12 * side, 0.15, 0.02))
+		var wing := _pivot(_body, Vector3(0.1 * side, 0.17, 0.0))
 		st = _begin()
-		_sphere(st, 0.1, Vector3(0.015 * side, -0.02, 0.02), Vector3(0.35, 0.75, 1.15), feathers.darkened(0.06), 6, 3)
+		_sphere(st, 0.1, Vector3(0.03 * side, -0.03, 0.03), Vector3(0.3, 0.8, 1.15), feathers.darkened(0.06))
 		_finish(st, wing)
 		_wings.append(wing)
 
-	_head = _pivot(_body, Vector3(0, 0.24, -0.1))
+	# The head pivots from the base of the neck (so pecking bends the neck, never detaches it).
+	_head = _pivot(_body, Vector3(0, 0.2, -0.1))
 	st = _begin()
-	_sphere(st, 0.07, Vector3(0, 0.04, -0.01), Vector3(0.9, 1.0, 1.0), feathers)
+	_limb(st, Vector3(0, -0.02, 0.01), Vector3(0, 0.1, -0.03), 0.075, 0.05, feathers)
+	_sphere(st, 0.065, Vector3(0, 0.14, -0.04), Vector3(0.9, 1.0, 1.05), feathers)
 	for i in 3:
-		_box(st, Vector3(0.018, 0.045, 0.03), Vector3(0, 0.115, -0.04 + i * 0.03), RED)
-	var beak := Basis(Vector3.RIGHT, -PI * 0.5) # Cone pointing forward.
-	_cylinder(st, 0.0, 0.025, 0.06, Vector3(0, 0.035, -0.09), ORANGE, beak)
-	_sphere(st, 0.018, Vector3(0, 0.0, -0.07), Vector3(0.8, 1.3, 0.6), RED, 6, 3)
+		_sphere(st, 0.022 - i * 0.003, Vector3(0, 0.2 - i * 0.005, -0.065 + i * 0.03), Vector3(0.5, 1.2, 1.0), RED) # Comb.
+	_limb(st, Vector3(0, 0.13, -0.095), Vector3(0, 0.125, -0.15), 0.025, 0.004, ORANGE) # Beak.
+	_sphere(st, 0.016, Vector3(0, 0.1, -0.09), Vector3(0.8, 1.4, 0.8), RED) # Wattle.
 	for side in [-1.0, 1.0]:
-		_sphere(st, 0.013, Vector3(0.045 * side, 0.06, -0.045), Vector3.ONE, Color(0.05, 0.05, 0.05), 6, 3)
+		_sphere(st, 0.014, Vector3(0.05 * side, 0.155, -0.06), Vector3.ONE, Color(0.05, 0.05, 0.05))
 	_finish(st, _head)
 
 

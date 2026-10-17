@@ -270,6 +270,27 @@ func _box(st: SurfaceTool, size: Vector3, at: Vector3, color: Color, rot: Basis 
 	LowPoly.add_smooth_shape(st, shape, Transform3D(rot * blob, at), color, 0.03, _rng)
 
 
+## A rounded tube from point `a` to point `b` (radius `ra` at a, `rb` at b), with ball
+## ends so joints always connect: legs, necks, tails and arms.
+func _limb(st: SurfaceTool, a: Vector3, b: Vector3, ra: float, rb: float, color: Color) -> void:
+	var along := b - a
+	var length := along.length()
+	if length < 0.001:
+		return
+	var shape := CylinderMesh.new()
+	shape.top_radius = rb
+	shape.bottom_radius = ra
+	shape.height = length
+	shape.radial_segments = 14
+	shape.rings = 1
+	shape.cap_top = false
+	shape.cap_bottom = false
+	var basis := Basis(Quaternion(Vector3.UP, along / length))
+	LowPoly.add_smooth_shape(st, shape, Transform3D(basis, (a + b) * 0.5), color, 0.03, _rng)
+	_sphere(st, ra, a, Vector3.ONE, color)
+	_sphere(st, rb, b, Vector3.ONE, color)
+
+
 ## A cylinder standing along Y, centred on `at`.
 func _cylinder(st: SurfaceTool, top: float, bottom: float, height: float, at: Vector3, color: Color, rot: Basis = Basis()) -> void:
 	var shape := CylinderMesh.new()
