@@ -26,7 +26,7 @@ signal upnp_finished
 const DEFAULT_PORT := 7777
 const MAX_PLAYERS := 10
 ## Bump this when a change makes old and new versions unable to play together.
-const PROTOCOL_VERSION := 1
+const PROTOCOL_VERSION := 2
 const SEND_RATE := 20.0
 const MAIN_MENU := "res://scenes/ui/main_menu/main_menu.tscn"
 const SAVE_PATH := "user://multiplayer.cfg"
@@ -49,9 +49,13 @@ var transport := ""
 ## The Steam join code of the game being played (Steam sessions only).
 var lobby_code := ""
 var steam := SteamLink.new()
+## A joined player's saved progress, sent by the host (applied when the game starts).
+var my_saved_data := {}
 
 var _world: Node3D
 var _remotes := {}
+## Host only: peer id -> save key of each joined player (see SaveManager).
+var _keys := {}
 var _upnp: UPNP
 var _upnp_thread: Thread
 var _upnp_port := 0
@@ -87,6 +91,14 @@ func is_online() -> bool:
 
 func is_host() -> bool:
 	return is_online() and multiplayer.is_server()
+
+
+## The key that this player's progress is stored under in a world save. The host's own
+## character is always "host". Joined players use their Steam ID (or name, direct connection).
+func get_player_key() -> String:
+	if steam.ensure_ready() == "":
+		return "steam:%d" % steam.get_steam_id()
+	return "name:%s" % player_name
 
 
 func get_my_id() -> int:
@@ -197,6 +209,8 @@ func leave() -> void:
 	steam.leave_lobby()
 	transport = ""
 	lobby_code = ""
+	_keys.clear()
+	my_saved_data = {}
 	if multiplayer.multiplayer_peer != null and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
@@ -250,6 +264,19 @@ func send_state(position: Vector3, yaw: float, pitch: float, flags: int) -> void
 		_state.rpc(position, yaw, pitch, flags)
 
 
+## A joined player sends their progress to the host, who keeps it in the world save.
+func send_progress(progress: Dictionary) -> void:
+	if is_online() and not multiplayer.is_server():
+		_progress.rpc_id(1, progress)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _progress(progress: Dictionary) -> void:
+	var key: String = _keys.get(multiplayer.get_remote_sender_id(), "")
+	if key != "" and multiplayer.is_server():
+		SaveManager.set_player_data(key, progress)
+
+
 func send_punch() -> void:
 	if is_online() and players.size() > 1:
 		_punched.rpc()
@@ -273,12 +300,12 @@ func _punched() -> void:
 
 func _on_connected_to_server() -> void:
 	# Connected: introduce ourselves to the host.
-	_register.rpc_id(1, PROTOCOL_VERSION, player_name)
+	_register.rpc_id(1, PROTOCOL_VERSION, player_name, get_player_key())
 
 
 ## Host: a new player says hello.
 @rpc("any_peer", "call_remote", "reliable")
-func _register(version: int, requested_name: String) -> void:
+func _register(version: int, requested_name: String, save_key: String) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if version != PROTOCOL_VERSION:
 		_rejected.rpc_id(id, "Different game version. Everyone needs the same version of the game.")
@@ -290,8 +317,14 @@ func _register(version: int, requested_name: String) -> void:
 		return
 	var final_name := _unique_name(requested_name.strip_edges().left(16))
 	players[id] = final_name
-	# Tell the new player who is here, and everyone else that they arrived.
-	_welcome.rpc_id(id, players, final_name)
+	# Their saved progress in this world is looked up by key. If someone with the same
+	# key is already playing (e.g. two copies on one account), the newcomer starts fresh.
+	save_key = save_key.left(40)
+	if save_key == "" or _keys.values().has(save_key) or save_key == SaveManager.HOST_KEY:
+		save_key = "%s#%d" % [save_key, id]
+	_keys[id] = save_key
+	# Tell the new player who is here (and their saved progress), and everyone else that they arrived.
+	_welcome.rpc_id(id, players, final_name, SaveManager.get_player_data(save_key))
 	for other in players:
 		if other != 1 and other != id:
 			_player_added.rpc_id(other, id, final_name)
@@ -300,10 +333,11 @@ func _register(version: int, requested_name: String) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func _welcome(all_players: Dictionary, my_name: String) -> void:
+func _welcome(all_players: Dictionary, my_name: String, saved: Dictionary) -> void:
 	_connecting = false
 	players = all_players
 	player_name = my_name
+	my_saved_data = saved
 	joined_game.emit()
 
 
@@ -347,6 +381,9 @@ func _forget_player(id: int) -> void:
 		return
 	var left_name: String = players[id]
 	players.erase(id)
+	_keys.erase(id)
+	if multiplayer.is_server():
+		SaveManager.save_world_file()
 	_remove_remote(id)
 	player_left.emit(id, left_name)
 

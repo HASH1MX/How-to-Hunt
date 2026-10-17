@@ -65,6 +65,10 @@ func ensure_ready() -> String:
 	return ""
 
 
+func get_steam_id() -> int:
+	return _steam.getSteamID() if _ready_to_use else 0
+
+
 ## The player's Steam name, used as the default player name.
 func get_persona_name() -> String:
 	return _steam.getPersonaName() if _ready_to_use else ""

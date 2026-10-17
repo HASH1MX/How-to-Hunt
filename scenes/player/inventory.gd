@@ -128,6 +128,47 @@ func drop_active_item() -> void:
 	changed.emit()
 
 
+## The inventory as plain data, for save files.
+func to_dict() -> Dictionary:
+	var saved_slots := []
+	for i in SLOT_COUNT:
+		saved_slots.append({} if slots[i] == null else {id = str(slots[i].id), count = slot_counts[i]})
+	return {
+		slots = saved_slots,
+		hand = {} if hand_item == null else {id = str(hand_item.id), count = hand_count},
+		selected = selected_slot,
+	}
+
+
+## Restores an inventory saved with to_dict(). Unknown items are skipped.
+func from_dict(saved: Dictionary) -> void:
+	for i in SLOT_COUNT:
+		slots[i] = null
+		slot_counts[i] = 0
+	hand_item = null
+	hand_count = 0
+	var saved_slots: Array = saved.get("slots", [])
+	for i in mini(saved_slots.size(), SLOT_COUNT):
+		var entry: Dictionary = saved_slots[i]
+		var item := _item_from(entry)
+		if item != null:
+			slots[i] = item
+			slot_counts[i] = clampi(int(entry.get("count", 1)), 1, MAX_STACK)
+	var hand: Dictionary = saved.get("hand", {})
+	var held := _item_from(hand)
+	if held != null:
+		hand_item = held
+		hand_count = clampi(int(hand.get("count", 1)), 1, MAX_STACK)
+	selected_slot = clampi(int(saved.get("selected", 0)), 0, SLOT_COUNT - 1)
+	changed.emit()
+
+
+func _item_from(entry: Dictionary) -> ItemData:
+	if not entry.has("id"):
+		return null
+	return ItemLibrary.get_item(StringName(entry.id))
+
+
 ## The item the player is currently holding: the hand item if there is one,
 ## otherwise the item in the selected slot (can be null).
 func get_active_item() -> ItemData:

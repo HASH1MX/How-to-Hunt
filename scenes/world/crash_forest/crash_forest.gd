@@ -50,6 +50,10 @@ func start_game() -> void:
 	player.rotation = spawn_point.rotation
 	add_child(player)
 	player.water_level = water.get_level()
+	# Bring back this player's saved progress (a joined player's comes from the host).
+	var is_guest := Network.is_online() and not Network.is_host()
+	player.load_save_data(Network.my_saved_data if is_guest else SaveManager.get_player_data(SaveManager.HOST_KEY))
+	SaveManager.begin_session(player)
 
 	var hud := HUD.new()
 	hud.player = player

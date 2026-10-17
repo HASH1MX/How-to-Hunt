@@ -22,6 +22,7 @@ signal food_changed(current: float, maximum: float)
 signal stamina_changed(current: float, maximum: float)
 signal breath_changed(current: float, maximum: float)
 signal damaged(amount: float)
+signal money_changed(amount: int)
 signal died
 ## Asks the HUD to show a conversation. The HUD calls on_finished when it closes.
 signal dialogue_requested(speaker: String, lines: PackedStringArray, on_finished: Callable)
@@ -109,6 +110,8 @@ var stamina: float
 var breath: float
 var water_jumps_left: int
 var spawn_position: Vector3
+## Cash. Earned by selling loot to the merchant (a later stage).
+var money := 0
 ## Water is above the waist: the player sinks and moves slowly.
 var is_in_deep_water := false
 ## The eyes are below the water surface: breath runs down.
@@ -363,6 +366,44 @@ func _update_food(delta: float) -> void:
 	food_changed.emit(food, max_food)
 	if food <= 0.0:
 		take_damage(starve_damage_per_second * delta)
+
+
+## The player's progress as plain data, for save files (see SaveManager).
+func to_save_data() -> Dictionary:
+	return {
+		pos = [global_position.x, global_position.y, global_position.z],
+		yaw = rotation.y,
+		pitch = head.rotation.x,
+		health = health,
+		food = food,
+		money = money,
+		inventory = inventory.to_dict(),
+	}
+
+
+## Puts the player back the way they were saved. Empty data (a new player) changes nothing.
+func load_save_data(saved: Dictionary) -> void:
+	if saved.is_empty():
+		return
+	var pos: Array = saved.get("pos", [])
+	if pos.size() == 3:
+		global_position = Vector3(pos[0], pos[1], pos[2])
+		velocity = Vector3.ZERO
+	rotation.y = float(saved.get("yaw", rotation.y))
+	head.rotation.x = clampf(float(saved.get("pitch", 0.0)), deg_to_rad(-89.0), deg_to_rad(89.0))
+	health = clampf(float(saved.get("health", max_health)), 1.0, max_health)
+	food = clampf(float(saved.get("food", max_food)), 0.0, max_food)
+	money = int(saved.get("money", 0))
+	inventory.from_dict(saved.get("inventory", {}))
+	health_changed.emit(health, max_health)
+	food_changed.emit(food, max_food)
+	money_changed.emit(money)
+
+
+## Adds (or, with a negative amount, takes) money.
+func add_money(amount: int) -> void:
+	money = maxi(money + amount, 0)
+	money_changed.emit(money)
 
 
 ## Restores food. Will be used by food items later.

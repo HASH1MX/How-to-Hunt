@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 Settings="*res://scenes/systems/settings.gd"
 Network="*res://scenes/systems/network.gd"
+SaveManager="*res://scenes/systems/save_manager.gd"
 
 [display]
 

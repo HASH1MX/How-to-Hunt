@@ -90,6 +90,7 @@
 | Island is 540 m wide (coast radius 214, mountains at 154) | Bigger map, props and animals scaled up about 2.5x to match. |
 | Multiplayer: Godot ENet, host = server, friends join by IP (`Network` autoload) | Free, no extra service. Each player runs their own world from fixed seeds and sends only their position/actions (20/s). Host tries UPnP to open the router port. Stage A done: connect, spawn, sync, names, join/leave. Animals and dropped items are NOT shared yet; no internet relay yet. |
 | Internet play through Steam relay (GodotSteam GDExtension in `addons/godotsteam`, app id 480 "Spacewar", `steam_appid.txt`) | Free Valve relay, no router setup, join by lobby code or open-games list. Lobby create/list verified on one account; the actual two-account connection still needs a friend test. Exe folder must keep the two DLLs and steam_appid.txt next to it. Own app id ($100) later. |
+| Save games: many worlds, each one file `user://worlds/<id>.json` (`SaveManager`) | Progress per player (position, health, food, money, inventory) stored by player key. Host owns the file; joined players get theirs from the host and send it back as they play. Autosave 30 s + on leaving. Animals/loose items and the map itself are not saved (every world uses the same island). |
 | `build/` is not stored in Git | Builds are large; they will be shared through GitHub Releases. |
 
 ## How to export (command line)

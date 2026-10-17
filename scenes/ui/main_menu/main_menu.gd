@@ -77,7 +77,7 @@ func _build_ui() -> void:
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 40)
 	column.add_child(gap)
-	_add_button(column, "Play", _on_play_pressed)
+	_add_button(column, "Play", _open_worlds)
 	_add_button(column, "Multiplayer", _open_multiplayer)
 	_add_button(column, "Settings", _open_settings)
 	_add_button(column, "Quit", func(): get_tree().quit())
@@ -150,12 +150,21 @@ func _run_command_line() -> void:
 			join = arg.trim_prefix("--join=")
 		elif arg.begins_with("--name="):
 			Network.set_player_name(arg.trim_prefix("--name="))
+	if host or join != "":
+		SaveManager.ensure_world()
 	if host:
 		if Network.host() == "":
 			_on_play_pressed()
 	elif join != "":
 		Network.joined_game.connect(_on_play_pressed, CONNECT_ONE_SHOT)
 		Network.join(join)
+
+
+## Play: pick (or make) a save-game world first.
+func _open_worlds() -> void:
+	var menu := WorldSelectMenu.new()
+	menu.world_chosen.connect(func(_id): _on_play_pressed())
+	_ui.add_child(menu)
 
 
 func _open_settings() -> void:

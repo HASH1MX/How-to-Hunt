@@ -132,7 +132,19 @@ func _refresh_steam_status() -> void:
 		Network.steam.request_games()
 
 
+## The host picks which world to play in first. `action` runs once it is chosen.
+func _pick_world_then(action: Callable) -> void:
+	var picker := WorldSelectMenu.new()
+	picker.title_text = "Host which world?"
+	picker.world_chosen.connect(func(_id): action.call())
+	add_child(picker)
+
+
 func _on_host_steam_pressed() -> void:
+	_pick_world_then(_host_steam)
+
+
+func _host_steam() -> void:
 	Network.set_player_name(_name_edit.text)
 	var problem := Network.host_steam(_friends_only.button_pressed)
 	if problem != "":
@@ -197,6 +209,10 @@ func _build_direct_tab() -> void:
 
 
 func _on_host_pressed() -> void:
+	_pick_world_then(_host_direct)
+
+
+func _host_direct() -> void:
 	Network.set_player_name(_name_edit.text)
 	var error := Network.host(_get_port())
 	if error != "":

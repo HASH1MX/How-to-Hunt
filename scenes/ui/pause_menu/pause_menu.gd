@@ -49,9 +49,13 @@ func _ready() -> void:
 	_add_button(column, "Main Menu", func():
 		_set_paused(false)
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		await _save_and_wait()
+		SaveManager.end_session()
 		Network.leave()
 		get_tree().change_scene_to_file(MAIN_MENU))
-	_add_button(column, "Quit Game", func(): get_tree().quit())
+	_add_button(column, "Quit Game", func():
+		await _save_and_wait()
+		get_tree().quit())
 	_root.visible = false
 
 
@@ -85,11 +89,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## Saves the game. A joined player gives the host a moment to receive their progress.
+func _save_and_wait() -> void:
+	SaveManager.save_now()
+	if Network.is_online() and not Network.is_host():
+		await get_tree().create_timer(0.4).timeout
+
+
 ## Who is playing, and (for the host) the address friends can join with.
 func _multiplayer_info() -> String:
+	var text := ""
+	if SaveManager.has_world():
+		text = "World: %s" % SaveManager.get_world_name()
 	if not Network.is_online():
-		return ""
-	var text := "Players: %s" % ", ".join(Network.get_player_names())
+		return text
+	text += "
+Players: %s" % ", ".join(Network.get_player_names())
 	if Network.transport == "steam":
 		text += "
 Steam join code: %s" % Network.lobby_code

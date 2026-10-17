@@ -51,6 +51,7 @@ func _ready() -> void:
 	player.breath_changed.connect(_on_breath_changed)
 	player.stamina_changed.connect(_on_stamina_changed)
 	player.damaged.connect(_on_damaged)
+	player.money_changed.connect(func(amount): _money.text = "$%d" % amount)
 	player.inventory.changed.connect(_refresh_inventory)
 	_health_ring.set_value(player.health, player.max_health)
 	_food_ring.set_value(player.food, player.max_food)
@@ -59,6 +60,7 @@ func _ready() -> void:
 	_on_breath_changed(player.breath, player.breath_time)
 	_on_stamina_changed(player.stamina, player.max_stamina)
 	_stamina_bar.value = player.stamina
+	_money.text = "$%d" % player.money
 	_refresh_inventory()
 
 
@@ -185,7 +187,7 @@ func _build_money() -> void:
 	box.offset_bottom = -26
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(box)
-	_money = UiStyle.label("$0", 26) # Cash comes in a later stage.
+	_money = UiStyle.label("$0", 26)
 	box.add_child(_money)
 
 
