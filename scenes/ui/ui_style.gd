@@ -35,6 +35,37 @@ static func menu_theme() -> Theme:
 		theme.set_color("font_focus_color", type, TEXT_COLOR)
 	theme.set_color("font_color", "Label", TEXT_COLOR)
 
+	# Text boxes: dark and rounded, with an orange outline while typing.
+	var field := _box(Color(0, 0, 0, 0.3), Color(1, 1, 1, 0.14))
+	field.content_margin_left = 16
+	field.content_margin_right = 16
+	field.content_margin_top = 8
+	field.content_margin_bottom = 10
+	var field_focus := field.duplicate() as StyleBoxFlat
+	field_focus.border_color = TITLE_COLOR
+	theme.set_stylebox("normal", "LineEdit", field)
+	theme.set_stylebox("focus", "LineEdit", field_focus)
+	theme.set_stylebox("read_only", "LineEdit", field)
+	theme.set_color("font_color", "LineEdit", TEXT_COLOR)
+	theme.set_color("font_placeholder_color", "LineEdit", Color(0.85, 0.84, 0.8, 0.4))
+	theme.set_color("caret_color", "LineEdit", TITLE_COLOR)
+	theme.set_color("selection_color", "LineEdit", Color(0.93, 0.45, 0.3, 0.4))
+	theme.set_font_size("font_size", "LineEdit", 22)
+
+	# Scroll bars: thin and soft.
+	var scroll_track := StyleBoxFlat.new()
+	scroll_track.bg_color = Color(1, 1, 1, 0.04)
+	scroll_track.set_corner_radius_all(6)
+	var scroll_grab := StyleBoxFlat.new()
+	scroll_grab.bg_color = Color(1, 1, 1, 0.25)
+	scroll_grab.set_corner_radius_all(6)
+	var scroll_grab_hover := scroll_grab.duplicate() as StyleBoxFlat
+	scroll_grab_hover.bg_color = Color(1, 1, 1, 0.4)
+	theme.set_stylebox("scroll", "VScrollBar", scroll_track)
+	theme.set_stylebox("grabber", "VScrollBar", scroll_grab)
+	theme.set_stylebox("grabber_highlight", "VScrollBar", scroll_grab_hover)
+	theme.set_stylebox("grabber_pressed", "VScrollBar", scroll_grab_hover)
+
 	var popup := _box(Color(0.08, 0.09, 0.1, 0.97), Color(1, 1, 1, 0.2))
 	theme.set_stylebox("panel", "PopupMenu", popup)
 	theme.set_stylebox("hover", "PopupMenu", _box(Color(0.93, 0.45, 0.3, 0.45), Color(0, 0, 0, 0)))

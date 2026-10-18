@@ -57,11 +57,6 @@ func _ready() -> void:
 
 
 func get_interact_text() -> String:
-	var player := get_tree().get_first_node_in_group("players")
-	if eats_items and player != null:
-		var item: ItemData = player.inventory.get_active_item()
-		if item != null and item.value > 0:
-			return "Talk to %s   ([%s] drop it at his mouth to feed him: $%d)" % [display_name, Settings.get_binding_text("drop"), item.value]
 	return "Talk to %s" % display_name
 
 
