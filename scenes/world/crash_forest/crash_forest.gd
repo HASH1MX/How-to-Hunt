@@ -39,10 +39,23 @@ func start_game() -> void:
 	_started = true
 	# Animals: rabbits, chickens, squirrels and a few deer. In a multiplayer game only
 	# the host has them for now (sharing animals between players comes in a later stage).
+	var world_sync: WorldSync = null
+	if Network.is_online():
+		world_sync = WorldSync.new()
+		world_sync.name = "WorldSync"
+		world_sync.world = self
+		world_sync.terrain = $Terrain
+		add_child(world_sync)
+		if Network.is_host():
+			for item in $TestItems.get_children():
+				world_sync.register_existing_item(item)
+		else:
+			$TestItems.queue_free() # The host sends every item, including these.
 	if not Network.is_online() or Network.is_host():
 		var animals := AnimalSpawner.new()
 		animals.name = "Animals"
 		animals.terrain = $Terrain
+		animals.sync = world_sync
 		add_child(animals)
 	var player := PLAYER_SCENE.instantiate()
 	player.name = "LocalPlayer"

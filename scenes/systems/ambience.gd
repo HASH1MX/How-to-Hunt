@@ -12,8 +12,8 @@ var _bird_timer := 2.0
 
 
 func _ready() -> void:
-	_wind = _loop("wind_loop", -18.0)
-	_waves = _loop("waves_loop", -40.0)
+	_wind = _loop("wind_loop", -32.0)
+	_waves = _loop("waves_loop", -46.0)
 
 
 func _loop(group: String, volume_db: float) -> AudioStreamPlayer:
@@ -36,10 +36,10 @@ func _process(delta: float) -> void:
 
 	# Waves: faint from the edge of the mountains, clear on the beach.
 	var shore := smoothstep(terrain.mountain_radius * 0.8, terrain.coast_radius - 4.0, distance)
-	var waves_db := lerpf(-44.0, -6.0, shore)
+	var waves_db := lerpf(-48.0, -16.0, shore)
 	# Wind: soft in the forest, stronger higher up.
 	var height := clampf(ground / terrain.mountain_height, 0.0, 1.0)
-	var wind_db := lerpf(-19.0, -7.0, height)
+	var wind_db := lerpf(-34.0, -22.0, height)
 	var blend := 1.0 - exp(-2.0 * delta)
 	_waves.volume_db = lerpf(_waves.volume_db, waves_db, blend)
 	_wind.volume_db = lerpf(_wind.volume_db, wind_db, blend)

@@ -52,6 +52,14 @@ func pick_up(item: ItemData) -> bool:
 	return true
 
 
+## False if picking this item up would fail (same kind as the hand stack, which is
+## full, and no slot has room).
+func can_pick_up(item: ItemData) -> bool:
+	if hand_item != null and hand_item.id == item.id and hand_count >= MAX_STACK:
+		return _find_slot_with_room(item) >= 0
+	return true
+
+
 func _find_slot_with_room(item: ItemData) -> int:
 	for i in SLOT_COUNT:
 		if slots[i] != null and slots[i].id == item.id and slot_counts[i] < MAX_STACK:

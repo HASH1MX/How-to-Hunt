@@ -34,6 +34,15 @@ var loot_count := 1
 var body_size := Vector3(0.4, 0.4, 0.5)
 
 var health: float
+## In a multiplayer game: the host's number for this animal (-1 = not shared).
+var net_id := -1
+## A joined player's copy of an animal that really lives on the host. It only
+## copies the host's position and animation; hits are sent to the host.
+var puppet := false
+var _net_target_position := Vector3.ZERO
+var _net_target_yaw := 0.0
+var _net_speed := 0.0
+var _net_first := true
 var state := State.IDLE
 ## Set by the spawner: animals stay on dry land within roam_radius of the middle.
 var terrain: Terrain
@@ -74,6 +83,8 @@ func _ready() -> void:
 
 	rotation.y = _rng.randf() * TAU
 	_start_idle()
+	if puppet:
+		set_physics_process(false)
 
 
 # --- For each species to fill in -----------------------------------------------
@@ -168,7 +179,7 @@ func flee_from(from: Vector3) -> void:
 func _check_for_scary_players() -> void:
 	if skittish_distance <= 0.0 or state == State.FLEE:
 		return
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in get_tree().get_nodes_in_group("players") + get_tree().get_nodes_in_group("remote_players"):
 		var distance := global_position.distance_to(player.global_position)
 		var moving_fast := Vector2(player.velocity.x, player.velocity.z).length() > 3.0
 		if distance < skittish_distance and moving_fast and not player.is_crouching:
@@ -199,6 +210,12 @@ func _turn_toward_safety() -> void:
 func take_hit(amount: float, from: Node, at: Vector3) -> void:
 	if state == State.DEAD:
 		return
+	if puppet:
+		# The host decides what a punch does, then tells everyone (see puppet_hit).
+		var sync := WorldSync.find(self)
+		if sync != null:
+			sync.request_animal_hit(net_id, amount, at)
+		return
 	health -= amount
 	DamageNumber.spawn(self, at, amount)
 	_make_sound(hurt_sound if health > 0.0 else die_sound)
@@ -209,21 +226,28 @@ func take_hit(amount: float, from: Node, at: Vector3) -> void:
 		push.y = 0.0
 		velocity += push.normalized() * 3.0 + Vector3(0.0, 2.5, 0.0)
 		flee_from((from as Node3D).global_position)
+	if net_id >= 0 and Network.is_host():
+		var sync := WorldSync.find(self)
+		if sync != null:
+			sync.broadcast_animal_hit(net_id, amount, at, health <= 0.0)
 	if health <= 0.0:
 		_die()
 
 
 func _die() -> void:
+	died.emit(self)
+	for i in loot_count:
+		WorldSync.spawn_item(get_parent(), ItemLibrary.get_item(loot_id),
+				global_position + Vector3(0.0, body_size.y + 0.2, 0.0),
+				Vector3(_rng.randf_range(-1.0, 1.0), 3.0, _rng.randf_range(-1.0, 1.0)))
+	_die_visuals()
+
+
+## Falls over, waits a moment, then shrinks away.
+func _die_visuals() -> void:
 	state = State.DEAD
 	velocity = Vector3.ZERO
 	collision_layer = 0 # Can't be hit any more.
-	died.emit(self)
-	for i in loot_count:
-		var drop := WorldItem.new()
-		drop.item = ItemLibrary.get_item(loot_id)
-		get_parent().add_child(drop)
-		drop.global_position = global_position + Vector3(0.0, body_size.y + 0.2, 0.0)
-		drop.linear_velocity = Vector3(_rng.randf_range(-1.0, 1.0), 3.0, _rng.randf_range(-1.0, 1.0))
 	# Fall over onto its side, wait a moment, then shrink away.
 	var tween := create_tween()
 	tween.tween_property(model, "rotation:z", PI * 0.5, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
@@ -243,6 +267,42 @@ func _set_overlay(node: Node) -> void:
 func _make_sound(group: String, volume_db: float = 0.0) -> void:
 	if group != "" and Sfx.has_group(group):
 		Sfx.play_at(group, global_position + Vector3(0.0, body_size.y * 0.6, 0.0), volume_db, 0.08, 32.0)
+
+
+# --- Multiplayer puppets ----------------------------------------------------------------------------
+
+## The host's latest position, direction and speed for this animal.
+func puppet_update(position: Vector3, yaw: float, speed: float) -> void:
+	_net_target_position = position
+	_net_target_yaw = yaw
+	_net_speed = speed
+	if _net_first:
+		_net_first = false
+		global_position = position
+		rotation.y = yaw
+
+
+## The host tells us this animal was hit: show the flash, number and sound here too.
+func puppet_hit(amount: float, at: Vector3, died: bool) -> void:
+	if state == State.DEAD:
+		return
+	DamageNumber.spawn(self, at, amount)
+	_flash.albedo_color.a = 0.75
+	create_tween().tween_property(_flash, "albedo_color:a", 0.0, 0.2)
+	_make_sound(die_sound if died else hurt_sound)
+	if died:
+		_die_visuals()
+
+
+func _process(delta: float) -> void:
+	if not puppet or state == State.DEAD:
+		return
+	if global_position.distance_to(_net_target_position) > 8.0:
+		global_position = _net_target_position
+	else:
+		global_position = global_position.lerp(_net_target_position, 1.0 - exp(-12.0 * delta))
+	rotation.y = lerp_angle(rotation.y, _net_target_yaw, 1.0 - exp(-10.0 * delta))
+	_animate(delta, _net_speed)
 
 
 # --- Model building helpers for species ----------------------------------------------

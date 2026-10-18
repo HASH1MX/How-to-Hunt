@@ -7,6 +7,12 @@ class_name ItemLibrary
 static var _items: Dictionary = {}
 
 
+static func has_item(id: StringName) -> bool:
+	if _items.is_empty():
+		_build_items()
+	return _items.has(id)
+
+
 static func get_item(id: StringName) -> ItemData:
 	if _items.is_empty():
 		_build_items()

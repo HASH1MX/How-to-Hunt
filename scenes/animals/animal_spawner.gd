@@ -19,6 +19,8 @@ extends Node3D
 @export var min_distance_from_players := 25.0
 
 var terrain: Terrain
+## In a multiplayer game, every animal is registered here so it can be shared.
+var sync: WorldSync
 var _rng := RandomNumberGenerator.new()
 
 
@@ -42,6 +44,8 @@ func _spawn(species: GDScript) -> void:
 	add_child(animal)
 	animal.global_position = spot + Vector3(0.0, 0.3, 0.0)
 	animal.died.connect(_on_animal_died.bind(species))
+	if sync != null:
+		sync.register_animal(animal)
 
 
 func _on_animal_died(_animal: Animal, species: GDScript) -> void:
@@ -60,7 +64,7 @@ func _find_spot(near: float, far: float) -> Vector3:
 			continue
 		var spot := Vector3(x, height, z)
 		var too_close := false
-		for player in get_tree().get_nodes_in_group("players"):
+		for player in get_tree().get_nodes_in_group("players") + get_tree().get_nodes_in_group("remote_players"):
 			if player.global_position.distance_to(spot) < min_distance_from_players:
 				too_close = true
 		if not too_close:

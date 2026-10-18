@@ -26,7 +26,7 @@ signal upnp_finished
 const DEFAULT_PORT := 7777
 const MAX_PLAYERS := 10
 ## Bump this when a change makes old and new versions unable to play together.
-const PROTOCOL_VERSION := 2
+const PROTOCOL_VERSION := 3
 const SEND_RATE := 20.0
 const MAIN_MENU := "res://scenes/ui/main_menu/main_menu.tscn"
 const SAVE_PATH := "user://multiplayer.cfg"
@@ -99,6 +99,12 @@ func get_player_key() -> String:
 	if steam.ensure_ready() == "":
 		return "steam:%d" % steam.get_steam_id()
 	return "name:%s" % player_name
+
+
+## Another player's character in this world (null for yourself or if not shown yet).
+func get_remote_player(id: int) -> RemotePlayer:
+	var remote = _remotes.get(id)
+	return remote if is_instance_valid(remote) else null
 
 
 func get_my_id() -> int:

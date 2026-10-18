@@ -33,9 +33,13 @@ var _speed := 0.0
 var _step_distance := 0.0
 var _was_airborne := false
 var _terrain: Terrain
+## So animals (which run on the host) get scared of this player like any other.
+var velocity := Vector3.ZERO
+var is_crouching := false
 
 
 func _ready() -> void:
+	add_to_group("remote_players")
 	model = CharacterModel.new()
 	model.shirt_color = SHIRT_COLORS[(peer_id - 1) % SHIRT_COLORS.size()]
 	model.pants_color = Color(0.2, 0.22, 0.3)
@@ -91,6 +95,8 @@ func _process(delta: float) -> void:
 	var flat := Vector2(global_position.x - before.x, global_position.z - before.z)
 	_speed = lerpf(_speed, flat.length() / maxf(delta, 0.0001), 1.0 - exp(-10.0 * delta))
 	model.move_speed = _speed if _speed > 0.15 else 0.0
+	velocity = Vector3(flat.x, 0.0, flat.y) / maxf(delta, 0.0001)
+	is_crouching = _flags & FLAG_CROUCH != 0
 	model.crouching = _flags & FLAG_CROUCH != 0
 	model.sprinting = _flags & FLAG_SPRINT != 0
 	model.airborne = _flags & FLAG_ON_FLOOR == 0 and _flags & FLAG_SWIM == 0

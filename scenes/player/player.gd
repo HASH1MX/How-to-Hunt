@@ -483,6 +483,11 @@ func _on_punch_hit() -> void:
 	if target.has_method("take_hit"):
 		# Animals (later) will have take_hit and lose health.
 		target.take_hit(punch_damage, self, hit.position)
+	elif target is WorldItem and target.net_id >= 0 and Network.is_online() and not Network.is_host():
+		# A shared item belongs to the host: ask it to knock the item.
+		var sync := WorldSync.find(self)
+		if sync != null:
+			sync.request_push(target.net_id, forward * punch_push)
 	elif target is RigidBody3D:
 		# Knock loose items around.
 		target.apply_impulse(forward * punch_push, hit.position - target.global_position)
@@ -507,9 +512,8 @@ func _update_held_item() -> void:
 ## Throws the dropped item a little in front of the player, from chest height
 ## (not from where the camera looks, which could be inside the ground).
 func _on_item_dropped(item: ItemData) -> void:
-	var dropped := WorldItem.new()
-	dropped.item = item
-	get_parent().add_child(dropped)
 	var forward := -global_transform.basis.z
-	dropped.global_position = global_position + Vector3(0.0, 1.2, 0.0) + forward * 0.6
-	dropped.linear_velocity = forward * 2.0 + Vector3(0.0, 1.0, 0.0) + Vector3(velocity.x, 0.0, velocity.z) * 0.5
+	var position := global_position + Vector3(0.0, 1.2, 0.0) + forward * 0.6
+	var throw := forward * 2.0 + Vector3(0.0, 1.0, 0.0) + Vector3(velocity.x, 0.0, velocity.z) * 0.5
+	# In multiplayer the host makes (and shares) the item; see WorldSync.
+	WorldSync.spawn_item(get_parent(), item, position, throw)
