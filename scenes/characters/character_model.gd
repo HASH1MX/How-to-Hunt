@@ -76,6 +76,7 @@ var _crouch_amount := 0.0
 var _air_amount := 0.0
 var _punch_time := -1.0
 var _punch_arm := 0
+var _chew_time := 0.0
 var _rng := RandomNumberGenerator.new()
 
 
@@ -216,6 +217,11 @@ func _build_legs() -> void:
 
 # --- Posing and animation -------------------------------------------------------
 
+## Chews happily for a moment (after being fed).
+func play_chew(seconds: float = 1.4) -> void:
+	_chew_time = seconds
+
+
 ## Swings an arm forward in a punch. Alternates between the left and right arm.
 func play_punch() -> void:
 	_punch_time = 0.0
@@ -247,6 +253,7 @@ func _process(delta: float) -> void:
 	var breath := sin(_time * 1.8)
 	_torso.scale = Vector3(1.0 + breath * 0.008, 1.0 + breath * 0.012, 1.0 + breath * 0.008)
 	_torso.rotation.x = (0.08 if sitting else 0.02) + breath * 0.01
+	_chew_time = maxf(_chew_time - delta, 0.0)
 	if _punch_time >= 0.0:
 		_punch_time += delta
 		if _punch_time > PUNCH_DURATION:
@@ -299,8 +306,9 @@ func _animate_head(delta: float) -> void:
 		var from_head := local - _head.position - Vector3(0, 0.3, 0)
 		target_yaw = clampf(atan2(-from_head.x, -from_head.z), -1.2, 1.2)
 		target_pitch = clampf(atan2(from_head.y, Vector2(from_head.x, from_head.z).length()), -0.5, 0.5)
-	# Nod while talking.
+	# Nod while talking, bob while chewing.
 	target_pitch += sin(_time * 9.0) * 0.07 * _talk_amount
+	target_pitch += sin(_time * 17.0) * 0.1 * clampf(_chew_time * 2.0, 0.0, 1.0)
 	var blend := 1.0 - exp(-5.0 * delta)
 	_head.rotation.y = lerp_angle(_head.rotation.y, target_yaw, blend)
 	_head.rotation.x = lerpf(_head.rotation.x, target_pitch, blend)

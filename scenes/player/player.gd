@@ -516,4 +516,4 @@ func _on_item_dropped(item: ItemData) -> void:
 	var position := global_position + Vector3(0.0, 1.2, 0.0) + forward * 0.6
 	var throw := forward * 2.0 + Vector3(0.0, 1.0, 0.0) + Vector3(velocity.x, 0.0, velocity.z) * 0.5
 	# In multiplayer the host makes (and shares) the item; see WorldSync.
-	WorldSync.spawn_item(get_parent(), item, position, throw)
+	WorldSync.spawn_item(get_parent(), item, position, throw, Network.get_my_id())

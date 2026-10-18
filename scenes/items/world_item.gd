@@ -14,6 +14,10 @@ var net_id := -1
 ## A joined player's copy of an item that really lives on the host: it only shows
 ## where the host's item is, and picking it up is a request to the host.
 var puppet := false
+## Who dropped it (multiplayer peer id; 1 = the host or a solo player, 0 = nobody, e.g.
+## it fell from an animal). The one who feeds it to Captain Gus gets the money.
+var dropped_by := 0
+var eaten := false
 
 var _target_position := Vector3.ZERO
 var _target_rotation := Vector3.ZERO

@@ -2,7 +2,7 @@ class_name ItemLibrary
 ## The list of every item in the game. Ask for an item by its id:
 ##     var stone := ItemLibrary.get_item(&"stone")
 ## To add a new item, add a line to _build_items().
-## Items with a value can be sold to Captain Gus (animal bodies).
+## Items with a value can be fed to Captain Gus for cash (animal bodies).
 
 static var _items: Dictionary = {}
 
@@ -25,11 +25,16 @@ static func get_item(id: StringName) -> ItemData:
 static func _build_items() -> void:
 	_add(&"stone", "Stone", Color(0.6, 0.6, 0.58), _stone_mesh(), Vector3(0.25, 0.18, 0.22))
 	_add(&"stick", "Stick", Color(0.55, 0.38, 0.22), _stick_mesh(), Vector3(0.12, 0.12, 0.7))
-	# Animals: when one is hunted its body becomes this item. Take it to Captain Gus to sell.
-	_add(&"rabbit", "Rabbit", Color(0.6, 0.5, 0.4), _carcass_mesh(&"rabbit"), Vector3(0.3, 0.2, 0.5), 10)
-	_add(&"chicken", "Chicken", Color(0.64, 0.4, 0.2), _carcass_mesh(&"chicken"), Vector3(0.4, 0.2, 0.4), 8)
-	_add(&"squirrel", "Squirrel", Color(0.7, 0.4, 0.18), _carcass_mesh(&"squirrel"), Vector3(0.3, 0.15, 0.55), 8)
-	_add(&"deer", "Deer", Color(0.58, 0.4, 0.25), _carcass_mesh(&"deer"), Vector3(0.7, 0.3, 1.0), 40)
+	# Animals: when one is hunted its body becomes this item. Feed it to Captain Gus for cash.
+	# The price follows how hard the animal is to catch:
+	#   chicken  20 hp, never runs away, slow             -> $6
+	#   squirrel 20 hp, runs from 5 m, fast and tiny      -> $14
+	#   rabbit   30 hp, runs from 5 m, fast               -> $18
+	#   deer     80 hp (8 punches), runs from 10 m, fastest, only a few exist -> $60
+	_add(&"chicken", "Chicken", Color(0.64, 0.4, 0.2), _carcass_mesh(&"chicken"), Vector3(0.4, 0.2, 0.4), 6)
+	_add(&"squirrel", "Squirrel", Color(0.7, 0.4, 0.18), _carcass_mesh(&"squirrel"), Vector3(0.3, 0.15, 0.55), 14)
+	_add(&"rabbit", "Rabbit", Color(0.6, 0.5, 0.4), _carcass_mesh(&"rabbit"), Vector3(0.3, 0.2, 0.5), 18)
+	_add(&"deer", "Deer", Color(0.58, 0.4, 0.25), _carcass_mesh(&"deer"), Vector3(0.7, 0.3, 1.0), 60)
 
 
 static func _add(id: StringName, display_name: String, icon_color: Color, mesh: Mesh, collision_size: Vector3, value: int = 0) -> void:

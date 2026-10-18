@@ -280,6 +280,20 @@ def make_blips(rng):
         save("blip_%d" % i, apply(s, envelope(n, 0.004, 0.045, 1.2)), 0.45)
 
 
+def make_munch(rng):
+    """Two crunchy bites and a gulp (Captain Gus eating)."""
+    for i in range(3):
+        track = silence(0.02)
+        for k in range(2):
+            n = int(0.09 * RATE)
+            bite = apply(bandpass(noise(0.09, rng), 500.0 + 300 * i, 3500.0), envelope(n, 0.004, 0.08, 1.8))
+            thump = apply(tone(sweep(200, 110, 0.09), "sine"), envelope(n, 0.003, 0.08))
+            track += mix(bite, scale(thump, 0.5)) + silence(0.06)
+        n = int(0.2 * RATE)
+        track += apply(tone(sweep(260 - 20 * i, 90, 0.2), "sine"), envelope(n, 0.02, 0.15, 1.3))
+        save("munch_%d" % i, track, 0.7)
+
+
 def main():
     rng = random.Random(12345)
     make_wind(rng)
@@ -289,6 +303,7 @@ def main():
     make_player(rng)
     make_animals(rng)
     make_blips(rng)
+    make_munch(rng)
 
 
 if __name__ == "__main__":

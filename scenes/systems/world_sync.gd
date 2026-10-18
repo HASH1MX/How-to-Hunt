@@ -48,16 +48,17 @@ static func find(from: Node) -> WorldSync:
 
 ## Spawns an item in the world, from anywhere in the game: the host spawns it and tells
 ## everyone; a joined player asks the host to; in a solo game it just appears.
-static func spawn_item(parent: Node, item: ItemData, position: Vector3, velocity: Vector3) -> void:
+static func spawn_item(parent: Node, item: ItemData, position: Vector3, velocity: Vector3, dropper: int = 0) -> void:
 	var sync := find(parent)
 	if sync != null and Network.is_online():
 		if Network.is_host():
-			sync.host_spawn(item, position, velocity)
+			sync.host_spawn(item, position, velocity, dropper)
 		else:
 			sync.request_spawn(item, position, velocity)
 		return
 	var drop := WorldItem.new()
 	drop.item = item
+	drop.dropped_by = dropper
 	parent.add_child(drop)
 	drop.global_position = position
 	drop.linear_velocity = velocity
@@ -114,9 +115,10 @@ func register_existing_item(item: WorldItem) -> void:
 			_item_settled.rpc(item.net_id, item.global_position, item.rotation))
 
 
-func host_spawn(item: ItemData, position: Vector3, velocity: Vector3) -> void:
+func host_spawn(item: ItemData, position: Vector3, velocity: Vector3, dropper: int = 0) -> void:
 	var drop := WorldItem.new()
 	drop.item = item
+	drop.dropped_by = dropper
 	world.add_child(drop)
 	drop.global_position = position
 	drop.linear_velocity = velocity
@@ -130,6 +132,16 @@ func remove_item(id: int) -> void:
 		item.queue_free()
 	_items.erase(id)
 	_item_removed.rpc(id)
+
+
+## Host: pays money to a joined player (they fed Captain Gus).
+func pay(peer: int, amount: int) -> void:
+	_pay.rpc_id(peer, amount)
+
+
+## Host: everyone sees the "+$" float up where Captain Gus ate.
+func broadcast_fed(position: Vector3, amount: int) -> void:
+	_fed_popup.rpc(position, amount)
 
 
 func broadcast_animal_hit(id: int, amount: float, at: Vector3, died: bool) -> void:
@@ -167,7 +179,7 @@ func _request_spawn(item_id: String, position: Vector3, velocity: Vector3) -> vo
 	var remote := _checked_player(position, 4.0)
 	if remote == null or not ItemLibrary.has_item(StringName(item_id)):
 		return
-	host_spawn(ItemLibrary.get_item(StringName(item_id)), position, velocity.limit_length(8.0))
+	host_spawn(ItemLibrary.get_item(StringName(item_id)), position, velocity.limit_length(8.0), multiplayer.get_remote_sender_id())
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -255,6 +267,20 @@ func _item_states(list: Array) -> void:
 		var item: WorldItem = _items.get(entry[0])
 		if item != null:
 			item.puppet_update(entry[1], entry[2])
+
+
+@rpc("authority", "call_remote", "reliable")
+func _pay(amount: int) -> void:
+	var player := get_tree().get_first_node_in_group("players")
+	if player != null:
+		player.add_money(amount)
+		Sfx.play("coins", -2.0, 0.04)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _fed_popup(position: Vector3, amount: int) -> void:
+	FloatingText.spawn(world, position + Vector3(0, 0.3, 0), "+$%d" % amount)
+	Sfx.play_at("munch", position, 0.0, 0.05, 30.0)
 
 
 @rpc("authority", "call_remote", "reliable")
