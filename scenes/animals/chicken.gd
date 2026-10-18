@@ -25,7 +25,7 @@ func _init() -> void:
 	flee_speed = 3.8
 	skittish_distance = 0.0
 	flee_time = 3.0
-	loot_id = &"feathers"
+	loot_id = &"chicken"
 	hurt_sound = "chicken_hurt"
 	die_sound = "chicken_die"
 	idle_sound = "chicken_cluck"

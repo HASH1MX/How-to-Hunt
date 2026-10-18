@@ -92,5 +92,5 @@ func start_game() -> void:
 	pause_menu.player = player
 	add_child(pause_menu)
 	hud.show_tip("Your Goal",
-			"Your plane crashed on this island. Hunt animals, sell their loot to the merchant "
-			+ "and earn money to unlock the next forest.\n\nPress [%s] to show or hide this tip." % Settings.get_binding_text("toggle_tip"), 25.0)
+			"Your plane crashed on this island. Hunt animals, pick up their bodies and sell them to Captain Gus "
+			+ "for money to unlock the next forest.\n\nPress [%s] to show or hide this tip." % Settings.get_binding_text("toggle_tip"), 25.0)

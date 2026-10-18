@@ -21,7 +21,7 @@ func _init() -> void:
 	flee_speed = 5.4
 	skittish_distance = 5.0
 	flee_time = 2.5
-	loot_id = &"rabbit_pelt"
+	loot_id = &"rabbit"
 	hurt_sound = "rabbit_hurt"
 	die_sound = "rabbit_die"
 	body_size = Vector3(0.32, 0.34, 0.48)

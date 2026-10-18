@@ -11,11 +11,12 @@ height = 1.8
 [node name="Pilot" type="StaticBody3D"]
 script = ExtResource("1_npc")
 display_name = "Captain Gus"
-first_lines = PackedStringArray("Oh! You're alive! Thank goodness... I thought I was the only one who made it out of that mess.", "I'm Gus. Captain Gus. Well... the captain of a plane that used to fly.", "We were cruising over the ocean when a huge flock of seagulls flew straight into the left engine. Then the right one caught fire. Not my best day.", "I tried to glide us down onto the beach, but those mountains came out of nowhere. We skidded right over them, and the trees took a wing as a souvenir.", "My leg's banged up, so I'm stuck on this seat for now. But you look like you can still punch a rabbit.", "Listen. Mountains all around, ocean on the other side... we're stuck on this island. You need to find a way to get us out of here.", "Hunt what you can, sell the loot to anyone you find, and earn enough to buy our way off this rock. I believe in you, kid!")
-repeat_lines = PackedStringArray("Any luck finding a way out yet?", "Hunt animals, sell their loot and earn money. There has to be a way off this island!")
+first_lines = PackedStringArray("Oh! You're alive! Thank goodness... I thought I was the only one who made it out of that mess.", "I'm Gus. Captain Gus. Well... the captain of a plane that used to fly.", "We were cruising over the ocean when a huge flock of seagulls flew straight into the left engine. Then the right one caught fire. Not my best day.", "I tried to glide us down onto the beach, but those mountains came out of nowhere. We skidded right over them, and the trees took a wing as a souvenir.", "My leg's banged up, so I'm stuck on this seat for now. But you look like you can still punch a rabbit.", "Listen. Mountains all around, ocean on the other side... we're stuck on this island. You need to find a way to get us out of here.", "Hunt what you can and bring the bodies to me: hold one and press E, and I'll pay you for it. Earn enough and we'll buy our way off this rock. I believe in you, kid!")
+repeat_lines = PackedStringArray("Any luck finding a way out yet?", "Bring me what you hunt. Hold a body and press E on me, and I'll pay cash. There has to be a way off this island!")
 quest_title = "Find a Way Out"
-quest_body = "Captain Gus is stuck with a hurt leg. Hunt animals around the island, sell their loot and earn money to find a way off the island."
+quest_body = "Captain Gus is stuck with a hurt leg. Hunt animals, carry their bodies to him (hold one and press E on him) and sell them to earn money for a way off the island."
 sits_on_seat = true
+buys_items = true
 
 [node name="Model" type="Node3D" parent="."]
 script = ExtResource("2_model")

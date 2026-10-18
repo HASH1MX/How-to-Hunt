@@ -22,7 +22,7 @@ func _init() -> void:
 	flee_speed = 5.2
 	skittish_distance = 5.0
 	flee_time = 3.0
-	loot_id = &"squirrel_tail"
+	loot_id = &"squirrel"
 	hurt_sound = "squirrel_hurt"
 	die_sound = "squirrel_hurt"
 	alert_sound = "squirrel_chitter"

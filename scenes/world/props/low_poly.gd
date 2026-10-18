@@ -73,6 +73,41 @@ static func add_smooth_shape(st: SurfaceTool, shape: PrimitiveMesh, xform: Trans
 		st.add_vertex(xform * verts[index])
 
 
+## A smooth rounded tube from point `a` to point `b` (radius `ra` at a, `rb` at b) with
+## ball ends, so limbs, necks and tails join up. For characters, animals and carcasses.
+static func add_tube(st: SurfaceTool, a: Vector3, b: Vector3, ra: float, rb: float, color: Color) -> void:
+	var along := b - a
+	var length := along.length()
+	if length < 0.001:
+		return
+	var tube := CylinderMesh.new()
+	tube.top_radius = rb
+	tube.bottom_radius = ra
+	tube.height = length
+	tube.radial_segments = 12
+	tube.rings = 1
+	tube.cap_top = false
+	tube.cap_bottom = false
+	add_smooth_shape(st, tube, Transform3D(Basis(Quaternion(Vector3.UP, along / length)), (a + b) * 0.5), color)
+	for end in [[a, ra], [b, rb]]:
+		var ball := SphereMesh.new()
+		ball.radius = end[1]
+		ball.height = end[1] * 2.0
+		ball.radial_segments = 12
+		ball.rings = 7
+		add_smooth_shape(st, ball, Transform3D(Basis(), end[0]), color)
+
+
+## A smooth rounded blob: an egg shape of the given radii (x, y, z) centred on `at`.
+static func add_blob(st: SurfaceTool, at: Vector3, radii: Vector3, color: Color) -> void:
+	var ball := SphereMesh.new()
+	ball.radius = 1.0
+	ball.height = 2.0
+	ball.radial_segments = 14
+	ball.rings = 8
+	add_smooth_shape(st, ball, Transform3D(Basis.from_scale(radii), at), color)
+
+
 ## Finishes a mesh made with add_smooth_shape().
 static func commit_smooth(st: SurfaceTool, double_sided: bool = false) -> ArrayMesh:
 	var mesh := st.commit()

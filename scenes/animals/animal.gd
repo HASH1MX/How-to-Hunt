@@ -234,27 +234,21 @@ func take_hit(amount: float, from: Node, at: Vector3) -> void:
 		_die()
 
 
+## The animal's body becomes an item lying where it fell (and nothing else drops).
 func _die() -> void:
 	died.emit(self)
-	for i in loot_count:
-		WorldSync.spawn_item(get_parent(), ItemLibrary.get_item(loot_id),
-				global_position + Vector3(0.0, body_size.y + 0.2, 0.0),
-				Vector3(_rng.randf_range(-1.0, 1.0), 3.0, _rng.randf_range(-1.0, 1.0)))
+	WorldSync.spawn_item(get_parent(), ItemLibrary.get_item(loot_id),
+			global_position + Vector3(0.0, body_size.y * 0.5, 0.0),
+			Vector3(_rng.randf_range(-0.5, 0.5), 1.5, _rng.randf_range(-0.5, 0.5)))
 	_die_visuals()
 
 
-## Falls over, waits a moment, then shrinks away.
+## The animal itself disappears (its body is now an item lying there).
 func _die_visuals() -> void:
 	state = State.DEAD
 	velocity = Vector3.ZERO
 	collision_layer = 0 # Can't be hit any more.
-	# Fall over onto its side, wait a moment, then shrink away.
-	var tween := create_tween()
-	tween.tween_property(model, "rotation:z", PI * 0.5, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(model, "position:y", body_size.x * 0.4, 0.35)
-	tween.tween_interval(1.5)
-	tween.tween_property(model, "scale", Vector3.ONE * 0.01, 0.5)
-	tween.tween_callback(queue_free)
+	queue_free()
 
 
 func _set_overlay(node: Node) -> void:

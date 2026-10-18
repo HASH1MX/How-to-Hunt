@@ -17,6 +17,8 @@ const INTERACT_LAYER := 1 << 3
 @export var quest_title := ""
 @export_multiline var quest_body := ""
 @export_group("Behaviour")
+## Buys animal bodies and other valuables: look at him holding one and press E.
+@export var buys_items := false
 ## Sits on an airplane seat instead of standing.
 @export var sits_on_seat := false
 ## Looks at players closer than this.
@@ -40,10 +42,40 @@ func _ready() -> void:
 
 
 func get_interact_text() -> String:
+	var player := get_tree().get_first_node_in_group("players")
+	if buys_items and player != null:
+		var item: ItemData = player.inventory.get_active_item()
+		if item != null and item.value > 0:
+			var count: int = player.inventory.get_active_count()
+			return "Sell %s%s for $%d" % ["%dx " % count if count > 1 else "", item.display_name, item.value * count]
 	return "Talk to %s" % display_name
 
 
+## Sells what the player is holding (all of that stack). Returns false if there is
+## nothing worth anything in their hands.
+func _try_sell(player: Node) -> bool:
+	var item: ItemData = player.inventory.get_active_item()
+	if item == null or item.value <= 0:
+		return false
+	var stack: Dictionary = player.inventory.remove_active_stack()
+	var total: int = stack.item.value * stack.count
+	player.add_money(total)
+	Sfx.play("coins", -2.0, 0.04)
+	var what: String = stack.item.display_name.to_lower()
+	if stack.count > 1:
+		what = "%d %ss" % [stack.count, what]
+	var lines := PackedStringArray([
+		"Ha! %s! Nice work, kid. That's $%d for you." % [what.capitalize(), total],
+		"Keep them coming. Every dollar gets us closer to getting off this island.",
+	])
+	model.talking = true
+	player.start_dialogue(display_name, lines, func(): model.talking = false)
+	return true
+
+
 func interact(player: Node) -> void:
+	if buys_items and _try_sell(player):
+		return
 	var first_time := not has_talked
 	var lines := first_lines if first_time or repeat_lines.is_empty() else repeat_lines
 	has_talked = true

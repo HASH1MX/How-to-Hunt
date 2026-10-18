@@ -42,7 +42,7 @@ func _ready() -> void:
 
 
 func get_interact_text() -> String:
-	return "Pick up %s" % item.display_name
+	return "Pick up %s%s" % [item.display_name, " ($%d)" % item.value if item.value > 0 else ""]
 
 
 ## Where the host says this item is (puppets only).

@@ -140,6 +140,28 @@ func drop_active_item() -> void:
 	changed.emit()
 
 
+## How many of the active item there are (see get_active_item).
+func get_active_count() -> int:
+	return hand_count if hand_item != null else slot_counts[selected_slot]
+
+
+## Takes the whole active stack out of the inventory (to sell it). Returns
+## {item, count}, or an empty dictionary if nothing is held.
+func remove_active_stack() -> Dictionary:
+	var item := get_active_item()
+	if item == null:
+		return {}
+	var count := get_active_count()
+	if hand_item != null:
+		hand_item = null
+		hand_count = 0
+	else:
+		slots[selected_slot] = null
+		slot_counts[selected_slot] = 0
+	changed.emit()
+	return {item = item, count = count}
+
+
 ## The inventory as plain data, for save files.
 func to_dict() -> Dictionary:
 	var saved_slots := []

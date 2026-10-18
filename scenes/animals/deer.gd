@@ -27,7 +27,7 @@ func _init() -> void:
 	flee_speed = 7.0
 	skittish_distance = 10.0
 	flee_time = 3.5
-	loot_id = &"deer_hide"
+	loot_id = &"deer"
 	hurt_sound = "deer_hurt"
 	die_sound = "deer_die"
 	alert_sound = "deer_snort"

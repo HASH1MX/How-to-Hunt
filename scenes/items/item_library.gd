@@ -2,7 +2,7 @@ class_name ItemLibrary
 ## The list of every item in the game. Ask for an item by its id:
 ##     var stone := ItemLibrary.get_item(&"stone")
 ## To add a new item, add a line to _build_items().
-## (Stone and stick are placeholder items for testing the inventory.)
+## Items with a value can be sold to Captain Gus (animal bodies).
 
 static var _items: Dictionary = {}
 
@@ -25,13 +25,11 @@ static func get_item(id: StringName) -> ItemData:
 static func _build_items() -> void:
 	_add(&"stone", "Stone", Color(0.6, 0.6, 0.58), _stone_mesh(), Vector3(0.25, 0.18, 0.22))
 	_add(&"stick", "Stick", Color(0.55, 0.38, 0.22), _stick_mesh(), Vector3(0.12, 0.12, 0.7))
-	# Animal loot (sold to the merchant later).
-	_add(&"rabbit_pelt", "Rabbit Pelt", Color(0.62, 0.52, 0.42),
-			_pelt_mesh(Vector3(0.32, 0.05, 0.4), Color(0.62, 0.52, 0.42), Color(0.82, 0.76, 0.68), 33), Vector3(0.3, 0.08, 0.38), 8)
-	_add(&"feathers", "Feathers", Color(0.96, 0.95, 0.9), _feathers_mesh(), Vector3(0.25, 0.08, 0.25), 5)
-	_add(&"squirrel_tail", "Squirrel Tail", Color(0.78, 0.45, 0.2), _tail_mesh(), Vector3(0.2, 0.2, 0.3), 6)
-	_add(&"deer_hide", "Deer Hide", Color(0.58, 0.4, 0.25),
-			_pelt_mesh(Vector3(0.65, 0.07, 0.8), Color(0.58, 0.4, 0.25), Color(0.9, 0.85, 0.75), 34), Vector3(0.6, 0.1, 0.75), 30)
+	# Animals: when one is hunted its body becomes this item. Take it to Captain Gus to sell.
+	_add(&"rabbit", "Rabbit", Color(0.6, 0.5, 0.4), _carcass_mesh(&"rabbit"), Vector3(0.3, 0.2, 0.5), 10)
+	_add(&"chicken", "Chicken", Color(0.64, 0.4, 0.2), _carcass_mesh(&"chicken"), Vector3(0.4, 0.2, 0.4), 8)
+	_add(&"squirrel", "Squirrel", Color(0.7, 0.4, 0.18), _carcass_mesh(&"squirrel"), Vector3(0.3, 0.15, 0.55), 8)
+	_add(&"deer", "Deer", Color(0.58, 0.4, 0.25), _carcass_mesh(&"deer"), Vector3(0.7, 0.3, 1.0), 40)
 
 
 static func _add(id: StringName, display_name: String, icon_color: Color, mesh: Mesh, collision_size: Vector3, value: int = 0) -> void:
@@ -45,57 +43,70 @@ static func _add(id: StringName, display_name: String, icon_color: Color, mesh: 
 	_items[id] = item
 
 
-# --- Animal loot ---------------------------------------------------------------
+# --- Animal bodies ---------------------------------------------------------------
+# Each is a small soft model lying on its side, facing -Z (so it points forward when held).
 
-## A soft, flat, slightly wobbly pelt.
-static func _pelt_mesh(size: Vector3, color: Color, spot_color: Color, model_seed: int) -> Mesh:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = model_seed
+static func _carcass_mesh(kind: StringName) -> Mesh:
 	var st := LowPoly.begin()
-	var shape := SphereMesh.new()
-	shape.radius = 0.5
-	shape.height = 1.0
-	shape.radial_segments = 8
-	shape.rings = 3
-	LowPoly.add_shape(st, shape, Transform3D(Basis.from_scale(size), Vector3.ZERO), color, size.x * 0.12, 0.1, rng)
-	for i in 3:
-		var spot := Vector3(rng.randf_range(-0.25, 0.25) * size.x, size.y * 0.42, rng.randf_range(-0.25, 0.25) * size.z)
-		LowPoly.add_shape(st, shape, Transform3D(Basis.from_scale(Vector3(size.x * 0.25, size.y * 0.2, size.z * 0.22)), spot), spot_color, 0.0, 0.05, rng)
-	return LowPoly.commit(st)
-
-
-## A small bundle of feathers.
-static func _feathers_mesh() -> Mesh:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 31
-	var st := LowPoly.begin()
-	var feather := SphereMesh.new()
-	feather.radius = 0.5
-	feather.height = 1.0
-	feather.radial_segments = 6
-	feather.rings = 3
-	for i in 4:
-		var angle := -0.6 + i * 0.4
-		var rot := Basis(Vector3.UP, angle) * Basis.from_scale(Vector3(0.05, 0.015, 0.22))
-		LowPoly.add_shape(st, feather, Transform3D(rot, Vector3(0, i * 0.012, 0)), Color(0.96, 0.95, 0.9), 0.0, 0.06, rng)
-	return LowPoly.commit(st)
-
-
-## A fluffy orange squirrel tail.
-static func _tail_mesh() -> Mesh:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 32
-	var st := LowPoly.begin()
-	var puff := SphereMesh.new()
-	puff.radius = 0.5
-	puff.height = 1.0
-	puff.radial_segments = 7
-	puff.rings = 4
-	for i in 4:
-		var t := i / 3.0
-		var at := Vector3(0, sin(t * 2.2) * 0.06, -0.1 + t * 0.2)
-		LowPoly.add_shape(st, puff, Transform3D(Basis.from_scale(Vector3.ONE * lerpf(0.09, 0.12, t)), at), Color(0.78, 0.45, 0.2), 0.008, 0.1, rng)
-	return LowPoly.commit(st)
+	var eye := Color(0.1, 0.09, 0.09)
+	match kind:
+		&"rabbit":
+			var fur := Color(0.6, 0.5, 0.4)
+			LowPoly.add_blob(st, Vector3(0, 0.1, 0), Vector3(0.1, 0.09, 0.2), fur)
+			LowPoly.add_blob(st, Vector3(0, 0.1, -0.22), Vector3(0.07, 0.07, 0.09), fur)
+			LowPoly.add_blob(st, Vector3(0, 0.06, -0.3), Vector3(0.025, 0.02, 0.02), Color(0.93, 0.66, 0.66))
+			LowPoly.add_blob(st, Vector3(0, 0.1, 0.2), Vector3(0.045, 0.045, 0.045), Color(0.96, 0.95, 0.93))
+			for side in [-1.0, 1.0]:
+				LowPoly.add_tube(st, Vector3(0.03 * side, 0.15, -0.2), Vector3(0.05 * side, 0.12, -0.02), 0.022, 0.016, fur.darkened(0.08))
+				LowPoly.add_tube(st, Vector3(0.07 * side, 0.08, 0.12), Vector3(0.18 * side, 0.06, 0.16), 0.04, 0.025, fur)
+				LowPoly.add_tube(st, Vector3(0.06 * side, 0.08, -0.12), Vector3(0.15 * side, 0.06, -0.17), 0.028, 0.02, fur)
+				LowPoly.add_blob(st, Vector3(0.05 * side, 0.115, -0.26), Vector3(0.012, 0.012, 0.012), eye)
+		&"chicken":
+			var feathers := Color(0.64, 0.4, 0.2)
+			LowPoly.add_blob(st, Vector3(0, 0.1, 0), Vector3(0.1, 0.09, 0.14), feathers)
+			LowPoly.add_blob(st, Vector3(0, 0.1, -0.1), Vector3(0.085, 0.08, 0.08), feathers.lightened(0.05))
+			LowPoly.add_tube(st, Vector3(0, 0.1, -0.12), Vector3(0, 0.09, -0.2), 0.045, 0.035, feathers)
+			LowPoly.add_blob(st, Vector3(0, 0.09, -0.22), Vector3(0.04, 0.045, 0.045), feathers)
+			LowPoly.add_blob(st, Vector3(0, 0.14, -0.22), Vector3(0.012, 0.025, 0.03), Color(0.85, 0.15, 0.12))
+			LowPoly.add_tube(st, Vector3(0, 0.085, -0.255), Vector3(0, 0.08, -0.29), 0.014, 0.004, Color(0.95, 0.62, 0.15))
+			for i in 3:
+				var angle := (i - 1) * 0.5
+				LowPoly.add_tube(st, Vector3(0, 0.12, 0.12), Vector3(sin(angle) * 0.1, 0.17, 0.25), 0.04, 0.02, feathers.darkened(0.06 + 0.03 * i))
+			for side in [-1.0, 1.0]:
+				LowPoly.add_blob(st, Vector3(0.095 * side, 0.115, 0.0), Vector3(0.03, 0.07, 0.1), feathers.darkened(0.08))
+				LowPoly.add_tube(st, Vector3(0.04 * side, 0.07, 0.04), Vector3(0.2 * side, 0.07, 0.06), 0.014, 0.009, Color(0.95, 0.62, 0.15))
+				LowPoly.add_blob(st, Vector3(0.04 * side, 0.115, -0.21), Vector3(0.009, 0.009, 0.009), eye)
+		&"squirrel":
+			var fur := Color(0.7, 0.4, 0.18)
+			LowPoly.add_blob(st, Vector3(0, 0.065, 0), Vector3(0.065, 0.06, 0.12), fur)
+			LowPoly.add_blob(st, Vector3(0, 0.065, -0.14), Vector3(0.05, 0.05, 0.06), fur)
+			LowPoly.add_blob(st, Vector3(0, 0.04, -0.19), Vector3(0.018, 0.016, 0.016), Color(0.25, 0.15, 0.12))
+			LowPoly.add_tube(st, Vector3(0, 0.06, 0.1), Vector3(0.05, 0.07, 0.22), 0.03, 0.05, fur.lightened(0.04))
+			LowPoly.add_tube(st, Vector3(0.05, 0.07, 0.22), Vector3(0.14, 0.07, 0.3), 0.05, 0.06, fur.lightened(0.08))
+			for side in [-1.0, 1.0]:
+				LowPoly.add_blob(st, Vector3(0.035 * side, 0.105, -0.17), Vector3(0.012, 0.025, 0.012), fur.darkened(0.12))
+				LowPoly.add_tube(st, Vector3(0.05 * side, 0.05, 0.06), Vector3(0.12 * side, 0.04, 0.08), 0.03, 0.018, fur)
+				LowPoly.add_tube(st, Vector3(0.04 * side, 0.05, -0.07), Vector3(0.1 * side, 0.04, -0.1), 0.02, 0.014, fur)
+				LowPoly.add_blob(st, Vector3(0.03 * side, 0.08, -0.17), Vector3(0.009, 0.009, 0.009), eye)
+		&"deer":
+			var fur := Color(0.58, 0.4, 0.25)
+			var light := Color(0.9, 0.84, 0.72)
+			var k := 0.7 # Shrunk a little so it is carryable.
+			LowPoly.add_blob(st, Vector3(0, 0.2, 0) * k, Vector3(0.2, 0.18, 0.45) * k, fur)
+			LowPoly.add_blob(st, Vector3(0, 0.14, 0) * k, Vector3(0.17, 0.12, 0.4) * k, light)
+			LowPoly.add_tube(st, Vector3(0, 0.2, -0.3) * k, Vector3(0, 0.15, -0.55) * k, 0.12 * k, 0.07 * k, fur)
+			LowPoly.add_blob(st, Vector3(0, 0.14, -0.62) * k, Vector3(0.085, 0.08, 0.13) * k, fur)
+			LowPoly.add_tube(st, Vector3(0, 0.12, -0.7) * k, Vector3(0, 0.1, -0.8) * k, 0.055 * k, 0.04 * k, light)
+			LowPoly.add_blob(st, Vector3(0, 0.1, -0.82) * k, Vector3(0.028, 0.025, 0.025) * k, Color(0.15, 0.12, 0.1))
+			LowPoly.add_tube(st, Vector3(0, 0.2, 0.42) * k, Vector3(0, 0.26, 0.54) * k, 0.04 * k, 0.03 * k, light)
+			for side in [-1.0, 1.0]:
+				LowPoly.add_tube(st, Vector3(0.07 * side, 0.2, -0.63) * k, Vector3(0.14 * side, 0.26, -0.6) * k, 0.03 * k, 0.012 * k, fur)
+				LowPoly.add_blob(st, Vector3(0.07 * side, 0.17, -0.66) * k, Vector3(0.02, 0.02, 0.02) * k, eye)
+				for z in [-0.28, 0.3]:
+					LowPoly.add_tube(st, Vector3(0.15 * side, 0.2, z) * k, Vector3(0.38 * side, 0.18, z * 1.05) * k, 0.07 * k, 0.04 * k, fur)
+					LowPoly.add_tube(st, Vector3(0.38 * side, 0.18, z * 1.05) * k, Vector3(0.5 * side, 0.14, z * 1.1) * k, 0.04 * k, 0.028 * k, fur.darkened(0.08))
+					LowPoly.add_blob(st, Vector3(0.52 * side, 0.14, z * 1.1) * k, Vector3(0.03, 0.03, 0.045) * k, Color(0.15, 0.12, 0.1))
+	return LowPoly.commit_smooth(st)
 
 
 static func _stone_mesh() -> Mesh:
