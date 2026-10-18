@@ -11,6 +11,10 @@ signal talked_to(first_time: bool)
 const INTERACT_LAYER := 1 << 3
 
 @export var display_name := "Stranger"
+## The name quests use for this character (Quests.report("talk", npc_id)). Empty = not part of quests.
+@export var npc_id := ""
+## Which story script supplies what they say ("gus" = GusStory). Empty = the lines below.
+@export var story := ""
 @export_multiline var first_lines: PackedStringArray = []
 @export_multiline var repeat_lines: PackedStringArray = []
 @export_group("Quest after first talk")
@@ -57,6 +61,11 @@ func _ready() -> void:
 
 
 func get_interact_text() -> String:
+	var player := get_tree().get_first_node_in_group("players")
+	if story != "" and player != null:
+		var item: ItemData = player.inventory.get_active_item()
+		if item != null and Quests.needed("give", String(item.id)) > 0:
+			return "Give %s to %s" % [item.display_name, display_name]
 	return "Talk to %s" % display_name
 
 
@@ -97,6 +106,8 @@ func _finish_eating(food: WorldItem, amount: int, mouth_position: Vector3) -> vo
 			local.add_money(amount)
 			Sfx.play("coins", -2.0, 0.04)
 	model.play_chew()
+	if npc_id != "":
+		Quests.report("feed", String(food.item.id))
 	Sfx.play_at("munch", mouth_position, 0.0, 0.05, 30.0)
 	FloatingText.spawn(get_parent(), mouth_position + Vector3(0, 0.3, 0), "+$%d" % amount)
 	if sync != null:
@@ -118,9 +129,34 @@ func _nearest_player(at: Vector3) -> int:
 	return best
 
 
+## Hands over what the player is holding if a quest is waiting for it. Returns true if
+## something was handed over (then the conversation is just a thank-you).
+func _try_give(player: Node) -> bool:
+	var item: ItemData = player.inventory.get_active_item()
+	if item == null:
+		return false
+	var wanted := Quests.needed("give", String(item.id))
+	if wanted <= 0:
+		return false
+	var count: int = player.inventory.take_from_active(wanted)
+	if count <= 0:
+		return false
+	var finishes := GusStory._missing("patch_me_up", String(item.id), count) == "" and Quests.is_active("patch_me_up")
+	var lines := GusStory.thanks_lines(String(item.id), count, finishes)
+	Sfx.play("pickup", -4.0, 0.05)
+	model.talking = true
+	player.start_dialogue(display_name, lines, func(): model.talking = false)
+	Quests.report("give", String(item.id), count)
+	return true
+
+
 func interact(player: Node) -> void:
+	if story != "" and _try_give(player):
+		return
 	var first_time := not has_talked
 	var lines := first_lines if first_time or repeat_lines.is_empty() else repeat_lines
+	if story == "gus":
+		lines = GusStory.talk_lines()
 	has_talked = true
 	model.talking = true
 	player.start_dialogue(display_name, lines, _on_dialogue_finished.bind(first_time))
@@ -129,6 +165,8 @@ func interact(player: Node) -> void:
 func _on_dialogue_finished(first_time: bool) -> void:
 	model.talking = false
 	talked_to.emit(first_time)
+	if npc_id != "":
+		Quests.report("talk", npc_id)
 	if first_time and quest_title != "":
 		var hud := get_tree().get_first_node_in_group("hud")
 		if hud != null:

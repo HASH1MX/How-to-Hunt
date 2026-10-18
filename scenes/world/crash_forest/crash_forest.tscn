@@ -91,6 +91,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.6, 8)
 script = ExtResource("6_item")
 item_id = &"stick"
 
+[node name="QuestItems" type="Node3D" parent="."]
+
+[node name="FirstAidKit" type="RigidBody3D" parent="QuestItems"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.4, 1.0, -12.9)
+script = ExtResource("6_item")
+item_id = &"first_aid_kit"
+
+[node name="Cloth" type="RigidBody3D" parent="QuestItems"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.17, 1.0, -4.98)
+script = ExtResource("6_item")
+item_id = &"cloth"
+
 [node name="Pilot" parent="." instance=ExtResource("7_pilot")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -2)
 rotation = Vector3(0, -2.68, 0)

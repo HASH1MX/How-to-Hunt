@@ -162,6 +162,27 @@ func remove_active_stack() -> Dictionary:
 	return {item = item, count = count}
 
 
+## Takes up to `count` of the active item out of the inventory (to hand it over).
+## Returns how many were taken.
+func take_from_active(count: int) -> int:
+	var item := get_active_item()
+	if item == null:
+		return 0
+	var taken := mini(count, get_active_count())
+	if hand_item != null:
+		hand_count -= taken
+		if hand_count <= 0:
+			hand_item = null
+			hand_count = 0
+	else:
+		slot_counts[selected_slot] -= taken
+		if slot_counts[selected_slot] <= 0:
+			slots[selected_slot] = null
+			slot_counts[selected_slot] = 0
+	changed.emit()
+	return taken
+
+
 ## The inventory as plain data, for save files.
 func to_dict() -> Dictionary:
 	var saved_slots := []

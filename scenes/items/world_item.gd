@@ -38,6 +38,14 @@ func _ready() -> void:
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.mesh = item.mesh
 	add_child(mesh_instance)
+	if item.glows:
+		var glow := OmniLight3D.new()
+		glow.light_color = item.icon_color.lightened(0.3)
+		glow.light_energy = 1.4
+		glow.omni_range = 2.4
+		glow.shadow_enabled = false
+		glow.position = Vector3(0, 0.3, 0)
+		add_child(glow)
 	var shape := BoxShape3D.new()
 	shape.size = item.collision_size
 	var collider := CollisionShape3D.new()

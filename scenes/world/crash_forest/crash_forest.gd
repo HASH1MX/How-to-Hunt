@@ -31,6 +31,22 @@ func _ready() -> void:
 		start_game()
 
 
+## The first-aid kit and cloth Gus asks for lie near the wreck until they've been handed over.
+func _place_quest_items(world_sync: WorldSync) -> void:
+	var items := get_node_or_null("QuestItems")
+	if items == null:
+		return
+	if Network.is_online() and not Network.is_host():
+		items.queue_free() # The host sends every item.
+		return
+	for child in items.get_children():
+		var done := Quests.get_progress("patch_me_up", 0 if child.item_id == &"first_aid_kit" else 2) > 0 or Quests.is_done("patch_me_up")
+		if done:
+			child.queue_free()
+		elif world_sync != null:
+			world_sync.register_existing_item(child)
+
+
 ## Puts the player, HUD and pause menu into the world. The main menu calls this
 ## when Play is pressed, so the world it already built is reused (no second load).
 func start_game() -> void:
@@ -57,6 +73,9 @@ func start_game() -> void:
 		animals.terrain = $Terrain
 		animals.sync = world_sync
 		add_child(animals)
+	# The story's quests (a joined player gets them from the host).
+	Quests.begin_session()
+	_place_quest_items(world_sync)
 	var player := PLAYER_SCENE.instantiate()
 	player.name = "LocalPlayer"
 	# Set the position before adding, so the player remembers it as its respawn point.
@@ -91,6 +110,3 @@ func start_game() -> void:
 	var pause_menu := PauseMenu.new()
 	pause_menu.player = player
 	add_child(pause_menu)
-	hud.show_tip("Your Goal",
-			"Your plane crashed on this island. Hunt animals, pick up their bodies and feed them to Captain Gus "
-			+ "(drop them right in front of his face) for money to unlock the next forest.\n\nPress [%s] to show or hide this tip." % Settings.get_binding_text("toggle_tip"), 25.0)

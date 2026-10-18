@@ -25,6 +25,11 @@ static func get_item(id: StringName) -> ItemData:
 static func _build_items() -> void:
 	_add(&"stone", "Stone", Color(0.6, 0.6, 0.58), _stone_mesh(), Vector3(0.25, 0.18, 0.22))
 	_add(&"stick", "Stick", Color(0.55, 0.38, 0.22), _stick_mesh(), Vector3(0.12, 0.12, 0.7))
+	# Story items (see QuestLibrary).
+	_add(&"first_aid_kit", "First-Aid Kit", Color(0.9, 0.2, 0.2), _first_aid_mesh(), Vector3(0.34, 0.16, 0.26))
+	_items[&"first_aid_kit"].glows = true
+	_add(&"cloth", "Cloth", Color(0.98, 0.9, 0.6), _cloth_mesh(), Vector3(0.3, 0.1, 0.3))
+	_items[&"cloth"].glows = true
 	# Animals: when one is hunted its body becomes this item. Feed it to Captain Gus for cash.
 	# The price follows how hard the animal is to catch:
 	#   chicken  20 hp, never runs away, slow             -> $6
@@ -46,6 +51,47 @@ static func _add(id: StringName, display_name: String, icon_color: Color, mesh: 
 	item.collision_size = collision_size
 	item.value = value
 	_items[id] = item
+
+
+# --- Story items ------------------------------------------------------------------
+
+## A red box with a white cross and a little handle.
+static func _first_aid_mesh() -> Mesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 41
+	var st := LowPoly.begin()
+	var box := BoxMesh.new()
+	box.size = Vector3(0.3, 0.14, 0.2)
+	LowPoly.add_shape(st, box, Transform3D(Basis(), Vector3(0, 0.07, 0)), Color(0.95, 0.95, 0.92), 0.0, 0.04, rng)
+	var white := Color(0.85, 0.12, 0.12) # The cross is red on the white box.
+	var bar_a := BoxMesh.new()
+	bar_a.size = Vector3(0.1, 0.012, 0.03)
+	var bar_b := BoxMesh.new()
+	bar_b.size = Vector3(0.03, 0.012, 0.1)
+	LowPoly.add_shape(st, bar_a, Transform3D(Basis(), Vector3(0, 0.146, 0)), white, 0.0, 0.0, rng)
+	LowPoly.add_shape(st, bar_b, Transform3D(Basis(), Vector3(0, 0.146, 0)), white, 0.0, 0.0, rng)
+	var handle := BoxMesh.new()
+	handle.size = Vector3(0.1, 0.03, 0.025)
+	LowPoly.add_shape(st, handle, Transform3D(Basis(), Vector3(0, 0.15, 0.11)), Color(0.85, 0.12, 0.12), 0.0, 0.0, rng)
+	return LowPoly.commit(st)
+
+
+## A crumpled pile of blue cloth.
+static func _cloth_mesh() -> Mesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42
+	var st := LowPoly.begin()
+	var blob := SphereMesh.new()
+	blob.radius = 0.5
+	blob.height = 1.0
+	blob.radial_segments = 7
+	blob.rings = 4
+	var blue := Color(0.98, 0.9, 0.6) # Pale yellow cloth: easy to see in the grass.
+	for i in 4:
+		var at := Vector3(rng.randf_range(-0.07, 0.07), 0.03 + i * 0.012, rng.randf_range(-0.07, 0.07))
+		var size := Vector3(rng.randf_range(0.26, 0.36), rng.randf_range(0.05, 0.08), rng.randf_range(0.2, 0.3))
+		LowPoly.add_shape(st, blob, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(size), at), blue.lightened(0.05 * i), 0.02, 0.08, rng)
+	return LowPoly.commit(st)
 
 
 # --- Animal bodies ---------------------------------------------------------------

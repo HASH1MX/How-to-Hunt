@@ -23,6 +23,9 @@ var player: Node
 
 var _money: Label
 var _quest_tip: QuestTip
+var _tracker: QuestTracker
+var _banner: VBoxContainer
+var _banner_tween: Tween
 var _health_ring: StatRing
 var _food_ring: StatRing
 var _breath_ring: StatRing
@@ -51,6 +54,9 @@ func _ready() -> void:
 	player.breath_changed.connect(_on_breath_changed)
 	player.stamina_changed.connect(_on_stamina_changed)
 	player.damaged.connect(_on_damaged)
+	Quests.changed.connect(_tracker.refresh)
+	Quests.announced.connect(_on_quest_announced)
+	_tracker.refresh()
 	player.money_changed.connect(func(amount): _money.text = "$%d" % amount)
 	player.inventory.changed.connect(_refresh_inventory)
 	_health_ring.set_value(player.health, player.max_health)
@@ -71,6 +77,7 @@ func show_tip(title: String, body: String, seconds: float = 20.0) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_tip"):
+		_tracker.toggle()
 		_quest_tip.toggle()
 	elif event.is_action_pressed("interact") and _dialogue.is_open() and not player.in_menu:
 		_dialogue.advance()
@@ -95,6 +102,44 @@ func _process(delta: float) -> void:
 				Settings.get_binding_text("slot_4"), Settings.get_binding_text("drop")]
 	else:
 		_hint.text = ""
+
+
+## "New quest" / "Quest complete" message in the top middle.
+func _build_banner() -> void:
+	_banner = VBoxContainer.new()
+	_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_banner.offset_top = 70
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.modulate.a = 0.0
+	for text_size in [46, 24]:
+		var label := UiStyle.label("", text_size, Color(1.0, 0.95, 0.84) if text_size == 46 else UiStyle.TEXT_COLOR)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_banner.add_child(label)
+	add_child(_banner)
+
+
+func _on_quest_announced(kind: String, quest_id: String, reward: int) -> void:
+	var title: String = QuestLibrary.get_def(quest_id).get("title", quest_id)
+	if kind == "started":
+		_show_banner("New quest", title)
+		Sfx.play("ui_open", -6.0, 0.02, "UI")
+	else:
+		_show_banner("Quest complete!", "%s%s" % [title, "   +$%d" % reward if reward > 0 else ""])
+		Sfx.play("ui_confirm", -4.0, 0.02, "UI")
+		if reward > 0:
+			Sfx.play("coins", -3.0, 0.04)
+
+
+func _show_banner(title: String, subtitle: String) -> void:
+	(_banner.get_child(0) as Label).text = title
+	(_banner.get_child(1) as Label).text = subtitle
+	if _banner_tween != null:
+		_banner_tween.kill()
+	_banner_tween = create_tween()
+	_banner_tween.tween_property(_banner, "modulate:a", 1.0, 0.25)
+	_banner_tween.tween_interval(3.0)
+	_banner_tween.tween_property(_banner, "modulate:a", 0.0, 0.8)
 
 
 # --- Building the layout ---------------------------------------------------
@@ -130,9 +175,13 @@ func _build() -> void:
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		pickup.add_child(l)
 
+	_tracker = QuestTracker.new()
+	_tracker.position = Vector2(22, 22)
+	add_child(_tracker)
 	_quest_tip = QuestTip.new()
-	_quest_tip.position = Vector2(22, 22)
+	_quest_tip.position = Vector2(22, 240)
 	add_child(_quest_tip)
+	_build_banner()
 
 	_build_stats()
 	_build_hotbar()
