@@ -162,16 +162,16 @@ func _build_arm_mesh(side: float) -> MeshInstance3D:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var sleeve := CylinderMesh.new()
-	sleeve.top_radius = 0.05
-	sleeve.bottom_radius = 0.062
+	sleeve.top_radius = 0.04
+	sleeve.bottom_radius = 0.05
 	sleeve.height = 0.42
 	sleeve.radial_segments = 20
 	sleeve.rings = 1
 	var along_z := Basis(Vector3.RIGHT, -PI * 0.5) # Cylinder's top now points to -Z.
 	LowPoly.add_smooth_shape(st, sleeve, Transform3D(along_z, Vector3(0, 0, 0.17)), sleeve_color)
 	var cuff := CylinderMesh.new()
-	cuff.top_radius = 0.054
-	cuff.bottom_radius = 0.054
+	cuff.top_radius = 0.044
+	cuff.bottom_radius = 0.044
 	cuff.height = 0.035
 	cuff.radial_segments = 20
 	cuff.rings = 1

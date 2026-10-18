@@ -1,9 +1,11 @@
 @tool
 class_name CharacterModel
 extends Node3D
-## A How to Fish-style character, built in code from simple low-poly shapes:
-## tall and lanky, a bean-shaped bald head with big googly eyes, long thin
-## arms with mitten hands, long legs and boots.
+## A How to Fish-style character, built in code from simple low-poly shapes
+## (flat-shaded facets, like the reference game): a small tall egg-shaped head with big
+## googly eyes sitting straight on narrow shoulders, long thin arms with little mitten
+## hands, long straight legs and chunky boots. Proportions (of a 2.0 m character):
+## legs 48%, torso 30%, head 22%.
 ## The look is set with the exported outfit options, so the same model is used
 ## for the pilot, the merchant and (later) players.
 ##
@@ -11,6 +13,9 @@ extends Node3D
 ## they can be animated: breathing, looking at someone, talking and gesturing.
 
 enum Hat { NONE, PILOT_CAP, BEANIE }
+
+## Flat-shaded facets (the How to Fish look). Turn off for smooth, rounded shading.
+@export var faceted := true
 
 @export_group("Outfit")
 @export var skin_color := Color(0.87, 0.7, 0.48)
@@ -26,6 +31,10 @@ enum Hat { NONE, PILOT_CAP, BEANIE }
 @export var tie := false
 @export var tie_color := Color(0.12, 0.14, 0.22)
 @export var mustache := false
+@export var beard := false
+## An apron over the shirt, from the chest to the knees (like the cooks in How to Fish).
+@export var wear_apron := false
+@export var apron_color := Color(0.85, 0.5, 0.16)
 @export var hair_color := Color(0.35, 0.24, 0.16)
 ## A white bandage around the right leg.
 @export var bandaged_leg := false
@@ -55,10 +64,10 @@ var swimming := false
 
 const LEG_UPPER := 0.45
 const LEG_LOWER := 0.42
-const FOOT_HEIGHT := 0.1
+const FOOT_HEIGHT := 0.09
 const HIP_HEIGHT := LEG_UPPER + LEG_LOWER + FOOT_HEIGHT
-const TORSO_HEIGHT := 0.56
-const ARM_LENGTH := 0.6
+const TORSO_HEIGHT := 0.6
+const ARM_LENGTH := 0.62
 const SEAT_HEIGHT := 0.5
 const PUNCH_DURATION := 0.28
 
@@ -88,7 +97,7 @@ func _ready() -> void:
 
 ## Height of the top of the head above the character's feet (or seat base).
 func get_head_top() -> float:
-	return _head.global_position.y - global_position.y + 0.3
+	return _head.global_position.y - global_position.y + 0.45
 
 
 # --- Building -----------------------------------------------------------------
@@ -100,26 +109,31 @@ func _build() -> void:
 	_hips = Node3D.new()
 	add_child(_hips)
 
-	# Torso: a slightly tapered cylinder, with optional overalls, tie and belt.
+	# Torso: a flat-ish tapered body (wider than deep), with optional overalls, apron, tie.
 	_torso = Node3D.new()
 	_hips.add_child(_torso)
 	var body := _begin()
-	_add(body, _cylinder(0.17, 0.2, TORSO_HEIGHT, 20), Vector3(0, TORSO_HEIGHT * 0.5, 0), shirt_color)
+	var flat := Basis.from_scale(Vector3(1.0, 1.0, 0.68))
+	_add(body, _cylinder(0.16, 0.18, TORSO_HEIGHT, 10), Vector3(0, TORSO_HEIGHT * 0.5, 0), shirt_color, flat)
 	if wear_overalls:
 		# Overalls bib over the lower torso, with two straps over the shoulders.
-		_add(body, _cylinder(0.185, 0.205, TORSO_HEIGHT * 0.62, 20), Vector3(0, TORSO_HEIGHT * 0.31, 0), overalls_color)
-		_add(body, _box(Vector3(0.2, 0.2, 0.06)), Vector3(0, TORSO_HEIGHT * 0.66, -0.16), overalls_color)
-		for x in [-0.09, 0.09]:
-			_add(body, _box(Vector3(0.04, 0.24, 0.36)), Vector3(x, TORSO_HEIGHT * 0.84, 0.0), overalls_color)
+		_add(body, _cylinder(0.172, 0.185, TORSO_HEIGHT * 0.68, 10), Vector3(0, TORSO_HEIGHT * 0.34, 0), overalls_color, flat)
+		_add(body, _box(Vector3(0.2, 0.3, 0.04)), Vector3(0, TORSO_HEIGHT * 0.66, -0.108), overalls_color)
+		for x in [-0.085, 0.085]:
+			_add(body, _box(Vector3(0.04, 0.24, 0.25)), Vector3(x, TORSO_HEIGHT * 0.85, -0.006), overalls_color)
+	elif wear_apron:
+		# A flat apron hanging from a neck strap down to the knees.
+		_add(body, _box(Vector3(0.25, 0.64, 0.03)), Vector3(0, TORSO_HEIGHT * 0.42, -0.128), apron_color)
+		_add(body, _box(Vector3(0.28, 0.035, 0.26)), Vector3(0, TORSO_HEIGHT * 0.92, -0.01), apron_color.darkened(0.15))
 	else:
 		# Belt.
-		_add(body, _cylinder(0.205, 0.205, 0.06, 20), Vector3(0, 0.05, 0), Color(0.12, 0.1, 0.09))
+		_add(body, _cylinder(0.185, 0.185, 0.05, 10), Vector3(0, 0.04, 0), Color(0.12, 0.1, 0.09), flat)
 	if tie:
-		_add(body, _box(Vector3(0.06, 0.32, 0.02)), Vector3(0, TORSO_HEIGHT * 0.66, -0.178), tie_color, Basis(Vector3.RIGHT, 0.06))
-		_add(body, _box(Vector3(0.07, 0.05, 0.03)), Vector3(0, TORSO_HEIGHT * 0.92, -0.168), tie_color)
+		_add(body, _box(Vector3(0.055, 0.3, 0.02)), Vector3(0, TORSO_HEIGHT * 0.66, -0.125), tie_color, Basis(Vector3.RIGHT, 0.06))
+		_add(body, _box(Vector3(0.065, 0.05, 0.03)), Vector3(0, TORSO_HEIGHT * 0.92, -0.118), tie_color)
 		# Epaulettes with gold stripes, for a pilot.
 		for x in [-0.15, 0.15]:
-			_add(body, _box(Vector3(0.1, 0.03, 0.14)), Vector3(x, TORSO_HEIGHT - 0.01, 0), tie_color)
+			_add(body, _box(Vector3(0.1, 0.03, 0.12)), Vector3(x, TORSO_HEIGHT - 0.01, 0), tie_color)
 			_add(body, _box(Vector3(0.1, 0.031, 0.025)), Vector3(x, TORSO_HEIGHT - 0.01, -0.03), Color(0.95, 0.75, 0.25))
 	_torso.add_child(_mesh(body))
 
@@ -128,88 +142,90 @@ func _build() -> void:
 	_build_legs()
 
 
+## A small tall egg-shaped head sitting right on the shoulders, with big googly eyes.
 func _build_head() -> void:
 	_head = Node3D.new()
-	_head.position = Vector3(0, TORSO_HEIGHT - 0.02, 0)
-	_head.scale = Vector3.ONE * 1.1 # How to Fish heads are big.
+	_head.position = Vector3(0, TORSO_HEIGHT - 0.03, 0)
 	_torso.add_child(_head)
 	var st := _begin()
-	# Bean-shaped head, a bit taller at the back, tilted forward.
+	# The head: an egg, a little taller at the back and tilted forward.
 	var head_shape := CapsuleMesh.new()
-	head_shape.radius = 0.17
-	head_shape.height = 0.54
-	head_shape.radial_segments = 28
-	head_shape.rings = 10
-	_add(st, head_shape, Vector3(0, 0.24, 0.02), skin_color, Basis(Vector3.RIGHT, -0.12), 0.012)
-	# Big googly eyes: white balls bulging out, small black pupils looking slightly apart.
+	head_shape.radius = 0.118
+	head_shape.height = 0.44
+	head_shape.radial_segments = 12
+	head_shape.rings = 5
+	_add(st, head_shape, Vector3(0, 0.21, 0.012), skin_color, Basis(Vector3.RIGHT, -0.1))
+	# Big googly eyes bulging out of the front: white balls, small pupils looking a bit apart.
 	for side in [-1.0, 1.0]:
-		var eye := Vector3(0.068 * side, 0.33, -0.135)
-		_add(st, _sphere(0.062, 20, 12), eye, Color(0.98, 0.98, 0.97))
-		var pupil_dir := Vector3(0.12 * side, 0.05, -1.0).normalized()
-		_add(st, _sphere(0.026, 14, 8), eye + pupil_dir * 0.048, Color(0.05, 0.05, 0.05), Basis.from_scale(Vector3(1, 1, 0.6)))
-	# Small open "o" mouth.
-	_add(st, _sphere(0.03, 14, 8), Vector3(0, 0.16, -0.165), Color(0.25, 0.1, 0.08), Basis.from_scale(Vector3(1.0, 0.75, 0.45)))
+		var eye := Vector3(0.05 * side, 0.285, -0.1)
+		_add(st, _sphere(0.062, 10, 6), eye, Color(0.98, 0.98, 0.97))
+		var pupil_dir := Vector3(0.14 * side, 0.04, -1.0).normalized()
+		_add(st, _sphere(0.028, 8, 4), eye + pupil_dir * 0.052, Color(0.07, 0.08, 0.1), Basis.from_scale(Vector3(1, 1, 0.6)))
 	if mustache:
-		_add(st, _box(Vector3(0.13, 0.035, 0.04)), Vector3(0, 0.205, -0.17), hair_color, Basis(Vector3.RIGHT, -0.15), 0.008)
+		_add(st, _box(Vector3(0.12, 0.03, 0.04)), Vector3(0, 0.155, -0.118), hair_color, Basis(Vector3.RIGHT, -0.12))
+	if beard:
+		_add(st, _sphere(0.1, 10, 6), Vector3(0, 0.1, -0.06), hair_color, Basis.from_scale(Vector3(1.0, 1.05, 0.95)))
 	match hat:
 		Hat.PILOT_CAP:
-			var cap := Vector3(0, 0.49, 0.03)
+			var cap := Vector3(0, 0.41, 0.02)
 			var tilt := Basis(Vector3.RIGHT, 0.1)
-			_add(st, _cylinder(0.2, 0.175, 0.11, 24), cap, hat_color, tilt)
-			_add(st, _cylinder(0.18, 0.18, 0.035, 24), cap + Vector3(0, -0.06, 0), Color(0.12, 0.13, 0.18), tilt)
+			_add(st, _cylinder(0.15, 0.135, 0.09, 12), cap, hat_color, tilt)
+			_add(st, _cylinder(0.14, 0.14, 0.03, 12), cap + Vector3(0, -0.05, 0), Color(0.12, 0.13, 0.18), tilt)
 			# Black visor sticking out at the front, and a gold badge.
-			_add(st, _box(Vector3(0.22, 0.02, 0.12)), cap + Vector3(0, -0.07, -0.2), Color(0.08, 0.08, 0.09), Basis(Vector3.RIGHT, 0.25))
-			_add(st, _box(Vector3(0.07, 0.05, 0.02)), cap + Vector3(0, -0.005, -0.198), Color(0.95, 0.76, 0.25), tilt)
+			_add(st, _box(Vector3(0.18, 0.018, 0.1)), cap + Vector3(0, -0.06, -0.15), Color(0.08, 0.08, 0.09), Basis(Vector3.RIGHT, 0.25))
+			_add(st, _box(Vector3(0.06, 0.045, 0.018)), cap + Vector3(0, -0.004, -0.15), Color(0.95, 0.76, 0.25), tilt)
 		Hat.BEANIE:
-			_add(st, _sphere(0.18, 20, 10), Vector3(0, 0.44, 0.02), hat_color, Basis.from_scale(Vector3(1.0, 0.75, 1.0)))
+			_add(st, _sphere(0.14, 10, 6), Vector3(0, 0.37, 0.015), hat_color, Basis.from_scale(Vector3(1.0, 0.75, 1.0)))
 	_head.add_child(_mesh(st))
 
 
+## Long thin arms (sleeves) ending in small mitten hands.
 func _build_arms() -> void:
 	for side in [-1.0, 1.0]:
 		var shoulder := Node3D.new()
-		shoulder.position = Vector3(0.235 * side, TORSO_HEIGHT - 0.06, 0)
+		shoulder.position = Vector3(0.205 * side, TORSO_HEIGHT - 0.06, 0)
 		_torso.add_child(shoulder)
 		var st := _begin()
 		var sleeve_color := shirt_color
-		# Rounded shoulder so the arm doesn't look stuck on like a stick.
-		_add(st, _sphere(0.072, 16, 8), Vector3(0, -0.01, 0), sleeve_color)
+		# A small rounded shoulder so the arm joins the body.
+		_add(st, _sphere(0.055, 8, 5), Vector3(0, -0.01, 0), sleeve_color)
 		if short_sleeves:
-			_add(st, _cylinder(0.062, 0.068, 0.2, 14), Vector3(0, -0.1, 0), sleeve_color)
-			_add(st, _cylinder(0.045, 0.05, ARM_LENGTH - 0.18, 14), Vector3(0, -0.18 - (ARM_LENGTH - 0.18) * 0.5, 0), skin_color)
+			_add(st, _cylinder(0.046, 0.05, 0.2, 8), Vector3(0, -0.1, 0), sleeve_color)
+			_add(st, _cylinder(0.036, 0.04, ARM_LENGTH - 0.18, 8), Vector3(0, -0.18 - (ARM_LENGTH - 0.18) * 0.5, 0), skin_color)
 		else:
-			_add(st, _cylinder(0.05, 0.058, ARM_LENGTH, 14), Vector3(0, -ARM_LENGTH * 0.5, 0), sleeve_color)
-		_add_mitten(st, Vector3(0, -ARM_LENGTH - 0.06, 0), side)
+			_add(st, _cylinder(0.04, 0.046, ARM_LENGTH, 8), Vector3(0, -ARM_LENGTH * 0.5, 0), sleeve_color)
+		_add_mitten(st, Vector3(0, -ARM_LENGTH - 0.045, 0), side)
 		shoulder.add_child(_mesh(st))
 		_shoulders.append(shoulder)
 
 
-## A soft round mitten hand: a plump palm, rounded fingers and a thumb.
+## A small mitten hand: a flat palm, a block of fingers and a thumb.
 func _add_mitten(st: SurfaceTool, at: Vector3, side: float) -> void:
-	_add(st, _sphere(0.062, 16, 10), at, skin_color, Basis.from_scale(Vector3(0.85, 1.15, 0.8)))
-	_add(st, _sphere(0.05, 14, 8), at + Vector3(0, -0.06, -0.008), skin_color, Basis.from_scale(Vector3(0.9, 1.2, 0.8)) )
-	_add(st, _sphere(0.026, 12, 8), at + Vector3(-0.05 * side, -0.01, -0.025), skin_color, Basis(Vector3.BACK, 0.5 * side) * Basis.from_scale(Vector3(0.8, 1.5, 0.9)))
+	_add(st, _sphere(0.05, 7, 5), at, skin_color, Basis.from_scale(Vector3(0.85, 1.25, 0.65)))
+	_add(st, _sphere(0.04, 6, 4), at + Vector3(0, -0.05, -0.006), skin_color, Basis.from_scale(Vector3(0.9, 1.25, 0.7)))
+	_add(st, _sphere(0.022, 6, 4), at + Vector3(-0.042 * side, 0.0, -0.016), skin_color, Basis(Vector3.BACK, 0.5 * side) * Basis.from_scale(Vector3(0.8, 1.6, 0.9)))
 
 
+## Long straight legs ending in chunky dark boots.
 func _build_legs() -> void:
 	for side in [-1.0, 1.0]:
 		var hip := Node3D.new()
-		hip.position = Vector3(0.1 * side, 0, 0)
+		hip.position = Vector3(0.085 * side, 0, 0)
 		_hips.add_child(hip)
 		var leg_color := overalls_color if wear_overalls else pants_color
 		var thigh := _begin()
-		_add(thigh, _cylinder(0.075, 0.085, LEG_UPPER, 16), Vector3(0, -LEG_UPPER * 0.5, 0), leg_color)
+		_add(thigh, _cylinder(0.058, 0.066, LEG_UPPER, 8), Vector3(0, -LEG_UPPER * 0.5, 0), leg_color)
 		hip.add_child(_mesh(thigh))
 		var knee := Node3D.new()
 		knee.position = Vector3(0, -LEG_UPPER, 0)
 		hip.add_child(knee)
 		var shin := _begin()
-		_add(shin, _cylinder(0.07, 0.075, LEG_LOWER, 16), Vector3(0, -LEG_LOWER * 0.5, 0), leg_color)
+		_add(shin, _cylinder(0.054, 0.058, LEG_LOWER, 8), Vector3(0, -LEG_LOWER * 0.5, 0), leg_color)
 		if bandaged_leg and side > 0:
-			_add(shin, _cylinder(0.082, 0.082, 0.16, 16), Vector3(0, -LEG_LOWER * 0.45, 0), Color(0.95, 0.94, 0.9), Basis(), 0.006)
-		# Boot, sticking forward.
-		_add(shin, _sphere(0.5, 18, 10), Vector3(0, -LEG_LOWER - FOOT_HEIGHT * 0.5 + 0.015, -0.05), shoe_color, Basis.from_scale(Vector3(0.17, 0.15, 0.3)))
-		_add(shin, _sphere(0.085, 16, 8), Vector3(0, -LEG_LOWER + 0.0, 0.0), shoe_color)
+			_add(shin, _cylinder(0.066, 0.066, 0.16, 8), Vector3(0, -LEG_LOWER * 0.45, 0), Color(0.95, 0.94, 0.9))
+		# Chunky rounded boot, pointing forward.
+		_add(shin, _sphere(0.5, 10, 6), Vector3(0, -LEG_LOWER - FOOT_HEIGHT * 0.5 + 0.012, -0.05), shoe_color, Basis.from_scale(Vector3(0.14, 0.13, 0.28)))
+		_add(shin, _sphere(0.07, 8, 5), Vector3(0, -LEG_LOWER + 0.0, 0.0), shoe_color)
 		knee.add_child(_mesh(shin))
 		_legs.append(hip)
 		_knees.append(knee)
@@ -337,11 +353,16 @@ func _animate_arms() -> void:
 
 # --- Small helpers --------------------------------------------------------------
 
-func _add(st: SurfaceTool, shape: PrimitiveMesh, at: Vector3, color: Color, rot: Basis = Basis(), jitter: float = 0.0) -> void:
-	LowPoly.add_smooth_shape(st, shape, Transform3D(rot, at), color, 0.02, _rng)
+func _add(st: SurfaceTool, shape: PrimitiveMesh, at: Vector3, color: Color, rot: Basis = Basis()) -> void:
+	if faceted:
+		LowPoly.add_shape(st, shape, Transform3D(rot, at), color, 0.0, 0.05, _rng)
+	else:
+		LowPoly.add_smooth_shape(st, shape, Transform3D(rot, at), color, 0.02, _rng)
 
 
 func _begin() -> SurfaceTool:
+	if faceted:
+		return LowPoly.begin()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	return st
@@ -349,7 +370,7 @@ func _begin() -> SurfaceTool:
 
 func _mesh(st: SurfaceTool) -> MeshInstance3D:
 	var instance := MeshInstance3D.new()
-	instance.mesh = LowPoly.commit_smooth(st)
+	instance.mesh = LowPoly.commit(st) if faceted else LowPoly.commit_smooth(st)
 	return instance
 
 
