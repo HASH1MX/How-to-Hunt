@@ -82,6 +82,18 @@ func get_height(x: float, z: float) -> float:
 	return height
 
 
+## What the ground is made of at a world position: "grass", "sand" or "rock".
+## Used to pick footstep sounds.
+func get_surface_at(x: float, z: float) -> String:
+	var height := get_height(x, z)
+	if height < water_level + 0.9 and Vector2(x, z).length() > mountain_radius:
+		return "sand"
+	var slope := absf(get_height(x + 1.0, z) - height) + absf(get_height(x, z + 1.0) - height)
+	if slope > 0.95 or height > mountain_height * 0.75:
+		return "rock"
+	return "grass"
+
+
 ## Roughly how far from the middle there is dry land.
 func get_land_radius() -> float:
 	return coast_radius

@@ -23,6 +23,11 @@ signal stamina_changed(current: float, maximum: float)
 signal breath_changed(current: float, maximum: float)
 signal damaged(amount: float)
 signal money_changed(amount: int)
+## For sounds: jumped, landed at this speed (m/s), and a punch landed
+## (on a creature, or just on something solid) at this position.
+signal jumped
+signal landed(speed: float)
+signal punch_connected(hit_creature: bool, at: Vector3)
 signal died
 ## Asks the HUD to show a conversation. The HUD calls on_finished when it closes.
 signal dialogue_requested(speaker: String, lines: PackedStringArray, on_finished: Callable)
@@ -181,6 +186,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		for i in Inventory.SLOT_COUNT:
 			if event.is_action_pressed("slot_%d" % (i + 1)):
 				inventory.press_slot(i)
+				Sfx.play("slot", -8.0, 0.08)
 
 
 func _physics_process(delta: float) -> void:
@@ -262,6 +268,7 @@ func _handle_jump(delta: float) -> void:
 		return
 	velocity.y = jump_velocity
 	_jump_cooldown_left = jump_cooldown
+	jumped.emit()
 
 
 ## Moves the player, but stops jumps from "sliding" up surfaces too steep to walk on.
@@ -327,6 +334,7 @@ func _has_room_to_stand() -> bool:
 ## Hurts the player when landing too fast. Water breaks the fall.
 func _on_landed(speed: float) -> void:
 	view_model.on_landed(speed)
+	landed.emit(speed)
 	if is_in_deep_water or speed <= safe_fall_speed:
 		return
 	take_damage((speed - safe_fall_speed) * fall_damage_per_speed)
@@ -471,6 +479,7 @@ func _on_punch_hit() -> void:
 	if hit.is_empty():
 		return
 	var target: Object = hit.collider
+	punch_connected.emit(target.has_method("take_hit"), hit.position)
 	if target.has_method("take_hit"):
 		# Animals (later) will have take_hit and lose health.
 		target.take_hit(punch_damage, self, hit.position)

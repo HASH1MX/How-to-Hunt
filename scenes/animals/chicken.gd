@@ -26,6 +26,10 @@ func _init() -> void:
 	skittish_distance = 0.0
 	flee_time = 3.0
 	loot_id = &"feathers"
+	hurt_sound = "chicken_hurt"
+	die_sound = "chicken_die"
+	idle_sound = "chicken_cluck"
+	idle_sound_gap = Vector2(6.0, 16.0)
 	body_size = Vector3(0.3, 0.42, 0.36)
 
 

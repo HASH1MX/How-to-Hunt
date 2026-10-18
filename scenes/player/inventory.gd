@@ -8,6 +8,8 @@ extends Node
 
 signal changed
 signal item_dropped(item: ItemData)
+## An item was picked up from the world (for the pick-up sound).
+signal item_picked_up(item: ItemData)
 
 const SLOT_COUNT := 4
 ## Items of the same kind stack up to this many in one slot (or in the hand).
@@ -40,11 +42,13 @@ func pick_up(item: ItemData) -> bool:
 				return false
 			slot_counts[slot] += 1
 		changed.emit()
+		item_picked_up.emit(item)
 		return true
 	_stash_hand_stack()
 	hand_item = item
 	hand_count = 1
 	changed.emit()
+	item_picked_up.emit(item)
 	return true
 
 

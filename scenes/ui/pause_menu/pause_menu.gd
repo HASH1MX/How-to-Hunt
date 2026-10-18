@@ -64,6 +64,7 @@ func is_open() -> bool:
 
 
 func open() -> void:
+	Sfx.play("ui_open", -8.0, 0.02, "UI")
 	_info.text = _multiplayer_info()
 	_info.visible = _info.text != ""
 	_copy_button.visible = Network.transport == "steam"
@@ -73,6 +74,8 @@ func open() -> void:
 
 
 func close() -> void:
+	if _root.visible:
+		Sfx.play("ui_close", -8.0, 0.02, "UI")
 	if _settings != null:
 		_settings.close()
 	_root.visible = false

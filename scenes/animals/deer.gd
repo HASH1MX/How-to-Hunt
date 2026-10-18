@@ -28,6 +28,9 @@ func _init() -> void:
 	skittish_distance = 10.0
 	flee_time = 3.5
 	loot_id = &"deer_hide"
+	hurt_sound = "deer_hurt"
+	die_sound = "deer_die"
+	alert_sound = "deer_snort"
 	body_size = Vector3(0.5, 1.3, 1.2)
 
 

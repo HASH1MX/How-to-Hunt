@@ -23,6 +23,11 @@ func _init() -> void:
 	skittish_distance = 5.0
 	flee_time = 3.0
 	loot_id = &"squirrel_tail"
+	hurt_sound = "squirrel_hurt"
+	die_sound = "squirrel_hurt"
+	alert_sound = "squirrel_chitter"
+	idle_sound = "squirrel_chitter"
+	idle_sound_gap = Vector2(15.0, 35.0)
 	body_size = Vector3(0.22, 0.26, 0.32)
 
 

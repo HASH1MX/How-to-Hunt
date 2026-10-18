@@ -10,6 +10,8 @@ extends Node3D
 
 ## Emitted at the moment a punch reaches full reach, so the player can check what it hit.
 signal punch_hit
+## A punch starts swinging (for the whoosh sound).
+signal punch_started
 
 @export var skin_color := Color(0.87, 0.7, 0.48)
 @export var sleeve_color := Color(0.27, 0.33, 0.55)
@@ -76,6 +78,7 @@ func punch(gap: float = -1.0) -> bool:
 	_punch_time[arm] = 0.0
 	_punch_hit_sent[arm] = false
 	_cooldown = gap if gap >= 0.0 else punch_cooldown
+	punch_started.emit()
 	return true
 
 

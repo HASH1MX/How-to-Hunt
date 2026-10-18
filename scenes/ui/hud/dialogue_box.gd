@@ -73,4 +73,9 @@ func _show_line() -> void:
 
 func _process(delta: float) -> void:
 	if visible and _text.visible_ratio < 1.0 and _text.text.length() > 0:
+		var before := _text.visible_characters if _text.visible_characters >= 0 else int(_text.visible_ratio * _text.text.length())
 		_text.visible_ratio = minf(_text.visible_ratio + TYPE_SPEED * delta / _text.text.length(), 1.0)
+		var shown := int(_text.visible_ratio * _text.text.length())
+		# A blip every other letter (not for spaces), like the speaker is mumbling along.
+		if shown / 2 != before / 2 and shown > 0 and _text.text[mini(shown, _text.text.length()) - 1] != " ":
+			Sfx.play("blip", -12.0, 0.12)

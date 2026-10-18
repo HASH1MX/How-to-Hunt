@@ -1,0 +1,7 @@
+Sound effects in assets/audio/sfx (files named step_*, punch_*, thud_*, drop_*, cloth_*, pickup_*,
+coins_*, slot_*, ui_*) come from Kenney's free packs "Impact Sounds", "RPG Audio" and
+"Interface Sounds" (https://kenney.nl), released under Creative Commons CC0 (public domain).
+No credit is required; credit to Kenney is given here anyway.
+
+Sounds in assets/audio/synth (wind, waves, birds, splashes, animal calls, voice blips) are made by
+tools/make_sounds.py in this project and belong to the project.

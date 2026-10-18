@@ -46,6 +46,10 @@ const PRESETS := [
 var mouse_sensitivity := 1.0
 var invert_mouse_y := false
 var field_of_view := 80.0
+# Sound (0 to 1)
+var master_volume := 0.8
+var effects_volume := 1.0
+var ambience_volume := 0.8
 # Display
 var window_mode := WindowMode.WINDOWED
 var vsync := true
@@ -63,7 +67,7 @@ var glow := true
 var detail_distance := 1.3
 
 const SAVED_VALUES := {
-	game = ["mouse_sensitivity", "invert_mouse_y", "field_of_view"],
+	game = ["mouse_sensitivity", "invert_mouse_y", "field_of_view", "master_volume", "effects_volume", "ambience_volume"],
 	display = ["window_mode", "vsync", "max_fps", "render_scale", "brightness"],
 	graphics = ["anti_aliasing", "shadow_quality", "ambient_occlusion", "glow", "detail_distance"],
 }

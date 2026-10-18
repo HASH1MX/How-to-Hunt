@@ -20,6 +20,7 @@ func _ready() -> void:
 
 
 func show_message(text: String) -> void:
+	Sfx.play("ui_confirm", -8.0, 0.03, "UI")
 	var label := UiStyle.label(text, 22)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_column.add_child(label)

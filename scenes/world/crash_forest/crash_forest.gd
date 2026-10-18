@@ -18,6 +18,11 @@ var _started := false
 func _ready() -> void:
 	# Let the graphics settings control this level's sky effects, shadows and grass distance.
 	Settings.register_world($WorldEnvironment.environment, $Sun)
+	# Wind, waves and birds (also behind the main menu).
+	var ambience := AmbienceController.new()
+	ambience.name = "Ambience"
+	ambience.terrain = $Terrain
+	add_child(ambience)
 	# Stand NPCs on the ground, wherever the terrain's little bumps are.
 	for child in get_children():
 		if child is NPC:
@@ -54,6 +59,11 @@ func start_game() -> void:
 	var is_guest := Network.is_online() and not Network.is_host()
 	player.load_save_data(Network.my_saved_data if is_guest else SaveManager.get_player_data(SaveManager.HOST_KEY))
 	SaveManager.begin_session(player)
+	var player_audio := PlayerAudio.new()
+	player_audio.name = "PlayerAudio"
+	player_audio.player = player
+	player_audio.terrain = $Terrain
+	player.add_child(player_audio)
 
 	var hud := HUD.new()
 	hud.player = player

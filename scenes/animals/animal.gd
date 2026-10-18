@@ -22,6 +22,13 @@ var skittish_distance := 0.0
 ## How long it keeps running after being scared or hit.
 var flee_time := 4.0
 var loot_id: StringName
+## Sound groups (see Sfx) for this animal's voice. Empty = silent.
+var hurt_sound := ""
+var die_sound := ""
+var alert_sound := ""
+var idle_sound := ""
+## Seconds between idle calls (random between the two numbers).
+var idle_sound_gap := Vector2(10.0, 25.0)
 var loot_count := 1
 ## Size of the collision box (also what punches hit).
 var body_size := Vector3(0.4, 0.4, 0.5)
@@ -36,6 +43,7 @@ var model: Node3D
 var _state_time := 0.0
 var _move_dir := Vector3.FORWARD
 var _scare_check := 0.0
+var _idle_sound_time := 0.0
 var _flash: StandardMaterial3D
 var _rng := RandomNumberGenerator.new()
 
@@ -89,6 +97,11 @@ func _physics_process(delta: float) -> void:
 		velocity += get_gravity() * delta
 	_state_time -= delta
 	_scare_check -= delta
+	_idle_sound_time -= delta
+	if _idle_sound_time <= 0.0:
+		_idle_sound_time = _rng.randf_range(idle_sound_gap.x, idle_sound_gap.y)
+		if state != State.FLEE:
+			_make_sound(idle_sound, -4.0)
 	if _scare_check <= 0.0:
 		_scare_check = 0.25
 		_check_for_scary_players()
@@ -159,6 +172,7 @@ func _check_for_scary_players() -> void:
 		var distance := global_position.distance_to(player.global_position)
 		var moving_fast := Vector2(player.velocity.x, player.velocity.z).length() > 3.0
 		if distance < skittish_distance and moving_fast and not player.is_crouching:
+			_make_sound(alert_sound, -3.0)
 			flee_from(player.global_position)
 			return
 
@@ -187,6 +201,7 @@ func take_hit(amount: float, from: Node, at: Vector3) -> void:
 		return
 	health -= amount
 	DamageNumber.spawn(self, at, amount)
+	_make_sound(hurt_sound if health > 0.0 else die_sound)
 	_flash.albedo_color.a = 0.75
 	create_tween().tween_property(_flash, "albedo_color:a", 0.0, 0.2)
 	if from is Node3D:
@@ -223,6 +238,11 @@ func _set_overlay(node: Node) -> void:
 		if child is GeometryInstance3D:
 			child.material_overlay = _flash
 		_set_overlay(child)
+
+
+func _make_sound(group: String, volume_db: float = 0.0) -> void:
+	if group != "" and Sfx.has_group(group):
+		Sfx.play_at(group, global_position + Vector3(0.0, body_size.y * 0.6, 0.0), volume_db, 0.08, 32.0)
 
 
 # --- Model building helpers for species ----------------------------------------------

@@ -30,6 +30,9 @@ var _pitch := 0.0
 var _flags := 0
 var _have_state := false
 var _speed := 0.0
+var _step_distance := 0.0
+var _was_airborne := false
+var _terrain: Terrain
 
 
 func _ready() -> void:
@@ -71,6 +74,7 @@ func push_state(position: Vector3, yaw: float, pitch: float, flags: int) -> void
 func punch() -> void:
 	if model != null:
 		model.play_punch()
+		Sfx.play_at("whoosh", global_position + Vector3(0, 1.3, 0), -7.0, 0.1, 25.0)
 
 
 func _process(delta: float) -> void:
@@ -92,3 +96,28 @@ func _process(delta: float) -> void:
 	model.airborne = _flags & FLAG_ON_FLOOR == 0 and _flags & FLAG_SWIM == 0
 	model.swimming = _flags & FLAG_SWIM != 0
 	model.remote_pitch = _pitch
+	_make_sounds(delta)
+
+
+## Footsteps, jumps and landings of another player, heard from where they are.
+func _make_sounds(delta: float) -> void:
+	var airborne := model.airborne
+	if airborne and not _was_airborne:
+		Sfx.play_at("cloth", global_position + Vector3(0, 1.0, 0), -8.0, 0.08, 25.0)
+	elif _was_airborne and not airborne:
+		Sfx.play_at("thud_soft", global_position, -7.0, 0.08, 30.0)
+		_step_distance = 0.0
+	_was_airborne = airborne
+	if airborne or model.swimming or _speed < 0.6:
+		if model.swimming and _speed > 0.8 and fmod(Time.get_ticks_msec() / 1000.0, 0.95) < delta:
+			Sfx.play_at("swim", global_position + Vector3(0, 0.8, 0), -7.0, 0.1, 30.0)
+		return
+	_step_distance += _speed * delta
+	if _step_distance < 1.55 + _speed * 0.13:
+		return
+	_step_distance = 0.0
+	if _terrain == null and get_parent() != null:
+		_terrain = get_parent().get_node_or_null("Terrain")
+	var surface := "grass" if _terrain == null else _terrain.get_surface_at(global_position.x, global_position.z)
+	var volume := -9.0 - (7.0 if model.crouching else 0.0)
+	Sfx.play_at("step_" + surface, global_position, volume, 0.1, 30.0)
