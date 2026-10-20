@@ -67,18 +67,19 @@ func _build_ui() -> void:
 	var column := VBoxContainer.new()
 	column.set_anchors_preset(Control.PRESET_CENTER_LEFT)
 	column.offset_left = 80
-	column.offset_top = -220
-	column.offset_bottom = 220
+	column.offset_top = -270
+	column.offset_bottom = 250
 	column.add_theme_constant_override("separation", 6)
 	ui.add_child(column)
 
 	column.add_child(UiStyle.label("How to Hunt", 86, Color(1.0, 0.95, 0.84)))
 	column.add_child(UiStyle.label("Stranded. Hungry. Armed with fists.", 22, UiStyle.DIM_TEXT_COLOR))
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 40)
+	gap.custom_minimum_size = Vector2(0, 22)
 	column.add_child(gap)
 	_add_button(column, "Play", _open_worlds)
 	_add_button(column, "Multiplayer", _open_multiplayer)
+	_add_button(column, "Customize", func(): _ui.add_child(CustomizeMenu.new()))
 	_add_button(column, "Settings", _open_settings)
 	_add_button(column, "Quit", func(): get_tree().quit())
 

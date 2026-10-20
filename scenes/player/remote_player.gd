@@ -33,6 +33,7 @@ var _speed := 0.0
 var _step_distance := 0.0
 var _was_airborne := false
 var _terrain: Terrain
+var _pending_look := {}
 ## So animals (which run on the host) get scared of this player like any other.
 var velocity := Vector3.ZERO
 var is_crouching := false
@@ -44,6 +45,7 @@ func _ready() -> void:
 	model.shirt_color = SHIRT_COLORS[(peer_id - 1) % SHIRT_COLORS.size()]
 	model.pants_color = Color(0.2, 0.22, 0.3)
 	model.name = "Model"
+	model.part_colors = _pending_look
 	add_child(model)
 	model.remote_controlled = true
 
@@ -73,6 +75,13 @@ func push_state(position: Vector3, yaw: float, pitch: float, flags: int) -> void
 		global_position = position
 		rotation.y = yaw
 		visible = true
+
+
+## The colours this player chose on their Customize screen.
+func apply_appearance(colors: Dictionary) -> void:
+	_pending_look = colors
+	if model != null:
+		model.apply_part_colors(colors)
 
 
 func set_held(item_id: String) -> void:

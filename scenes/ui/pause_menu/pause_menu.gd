@@ -1,6 +1,6 @@
 class_name PauseMenu
 extends CanvasLayer
-## The in-game menu, opened with Esc: Resume, Settings, Main Menu and Quit.
+## The in-game menu, opened with Esc: Resume, Customize, Settings, Main Menu and Quit.
 ## The world keeps running (like How to Fish, and so multiplayer works later),
 ## but the player can't move, punch or look around while it's open.
 ## Set `player` before adding it to the scene.
@@ -45,6 +45,7 @@ func _ready() -> void:
 	_copy_button = _add_button(column, "Copy join code", func():
 		DisplayServer.clipboard_set(Network.lobby_code))
 	_add_button(column, "Resume", close)
+	_add_button(column, "Customize", func(): _root.add_child(CustomizeMenu.new()))
 	_add_button(column, "Settings", _open_settings)
 	_add_button(column, "Main Menu", func():
 		_set_paused(false)

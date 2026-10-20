@@ -15,10 +15,13 @@ func _ready() -> void:
 	# Tell everyone what we're already holding.
 	var item: ItemData = player.inventory.get_active_item()
 	Network.send_held.call_deferred(String(item.id) if item != null else "")
+	Network.send_appearance.call_deferred(Appearance.to_data())
+	Appearance.changed.connect(_on_look_changed)
 	# Someone new arrived: tell them too.
 	Network.player_joined.connect(func(_id, _name):
 		var now: ItemData = player.inventory.get_active_item()
-		Network.send_held(String(now.id) if now != null else ""))
+		Network.send_held(String(now.id) if now != null else "")
+		Network.send_appearance(Appearance.to_data()))
 
 
 func _physics_process(delta: float) -> void:
@@ -36,3 +39,8 @@ func _physics_process(delta: float) -> void:
 	if player.is_in_deep_water:
 		flags |= RemotePlayer.FLAG_SWIM
 	Network.send_state(player.global_position, player.rotation.y, player.head.rotation.x, flags)
+
+
+## You changed your colours (Customize in the pause menu): show the others.
+func _on_look_changed() -> void:
+	Network.send_appearance(Appearance.to_data())

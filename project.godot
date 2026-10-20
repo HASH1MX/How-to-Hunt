@@ -22,6 +22,7 @@ Network="*res://scenes/systems/network.gd"
 SaveManager="*res://scenes/systems/save_manager.gd"
 Sfx="*res://scenes/systems/sfx.gd"
 Quests="*res://scenes/systems/quests.gd"
+Appearance="*res://scenes/systems/appearance.gd"
 
 [display]
 

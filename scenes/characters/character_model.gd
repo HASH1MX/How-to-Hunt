@@ -96,6 +96,14 @@ var _splint: Node3D
 var _crutch: MeshInstance3D
 ## In the right hand (other players' weapons and tools).
 var _hand_anchor: Node3D
+var _held_item: ItemData
+## Body-part colours chosen on the Customize screen (part -> Color, see the Appearance
+## autoload). A part not listed uses the outfit colours above.
+var part_colors := {}
+## Empty spots for accessories (hats, masks, moustaches - later): on top of the head and
+## on the face. They turn with the head.
+var head_attachment: Node3D
+var face_attachment: Node3D
 ## "" or "pistol"/"rifle": arms held up and forward, aiming.
 var aim_pose := ""
 var _crouch_amount := 0.0
@@ -120,8 +128,13 @@ func get_head_top() -> float:
 # --- Building -----------------------------------------------------------------
 
 func _build() -> void:
+	_rng.seed = hash(name) # The same small random details on every rebuild.
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
+	_shoulders.clear()
+	_legs.clear()
+	_knees.clear()
 
 	_hips = Node3D.new()
 	add_child(_hips)
@@ -131,7 +144,7 @@ func _build() -> void:
 	_hips.add_child(_torso)
 	var body := _begin()
 	var flat := Basis.from_scale(Vector3(1.0, 1.0, 0.68))
-	_add(body, _cylinder(0.16, 0.18, TORSO_HEIGHT, 10), Vector3(0, TORSO_HEIGHT * 0.5, 0), shirt_color, flat)
+	_add(body, _cylinder(0.16, 0.18, TORSO_HEIGHT, 10), Vector3(0, TORSO_HEIGHT * 0.5, 0), _part("torso", shirt_color), flat)
 	if wear_overalls:
 		# Overalls bib over the lower torso, with two straps over the shoulders.
 		_add(body, _cylinder(0.172, 0.185, TORSO_HEIGHT * 0.68, 10), Vector3(0, TORSO_HEIGHT * 0.34, 0), overalls_color, flat)
@@ -172,7 +185,7 @@ func _build_head() -> void:
 	head_shape.height = 0.44
 	head_shape.radial_segments = 12
 	head_shape.rings = 5
-	_add(st, head_shape, Vector3(0, 0.21, 0.012), skin_color, Basis(Vector3.RIGHT, -0.1))
+	_add(st, head_shape, Vector3(0, 0.21, 0.012), _part("head", skin_color), Basis(Vector3.RIGHT, -0.1))
 	# Big googly eyes bulging out of the front: white balls, small pupils looking a bit apart.
 	for side in [-1.0, 1.0]:
 		var eye := Vector3(0.05 * side, 0.285, -0.1)
@@ -202,6 +215,14 @@ func _build_head() -> void:
 		_add(st, _sphere(0.11, 10, 6), Vector3(0, 0.3, 0.05), hair_color, Basis.from_scale(Vector3(1.05, 1.1, 1.0)))
 		_add(st, _sphere(0.065, 8, 5), Vector3(0, 0.35, 0.14), hair_color)
 	_head.add_child(_mesh(st))
+	head_attachment = Node3D.new()
+	head_attachment.name = "HeadTop"
+	head_attachment.position = Vector3(0, 0.43, 0.01)
+	_head.add_child(head_attachment)
+	face_attachment = Node3D.new()
+	face_attachment.name = "Face"
+	face_attachment.position = Vector3(0, 0.2, -0.12)
+	_head.add_child(face_attachment)
 
 
 ## Long thin arms (sleeves) ending in small mitten hands.
@@ -211,15 +232,16 @@ func _build_arms() -> void:
 		shoulder.position = Vector3(0.205 * side, TORSO_HEIGHT - 0.06, 0)
 		_torso.add_child(shoulder)
 		var st := _begin()
-		var sleeve_color := shirt_color
+		var sleeve_color := _part("right_arm" if side > 0 else "left_arm", shirt_color)
+		var hand_color := _part("right_hand" if side > 0 else "left_hand", skin_color)
 		# A small rounded shoulder so the arm joins the body.
 		_add(st, _sphere(0.055, 8, 5), Vector3(0, -0.01, 0), sleeve_color)
 		if short_sleeves:
 			_add(st, _cylinder(0.046, 0.05, 0.2, 8), Vector3(0, -0.1, 0), sleeve_color)
-			_add(st, _cylinder(0.036, 0.04, ARM_LENGTH - 0.18, 8), Vector3(0, -0.18 - (ARM_LENGTH - 0.18) * 0.5, 0), skin_color)
+			_add(st, _cylinder(0.036, 0.04, ARM_LENGTH - 0.18, 8), Vector3(0, -0.18 - (ARM_LENGTH - 0.18) * 0.5, 0), hand_color)
 		else:
 			_add(st, _cylinder(0.04, 0.046, ARM_LENGTH, 8), Vector3(0, -ARM_LENGTH * 0.5, 0), sleeve_color)
-		_add_mitten(st, Vector3(0, -ARM_LENGTH - 0.045, 0), side)
+		_add_mitten(st, Vector3(0, -ARM_LENGTH - 0.045, 0), side, hand_color)
 		shoulder.add_child(_mesh(st))
 		if side > 0:
 			_hand_anchor = Node3D.new()
@@ -229,10 +251,10 @@ func _build_arms() -> void:
 
 
 ## A small mitten hand: a flat palm, a block of fingers and a thumb.
-func _add_mitten(st: SurfaceTool, at: Vector3, side: float) -> void:
-	_add(st, _sphere(0.05, 7, 5), at, skin_color, Basis.from_scale(Vector3(0.85, 1.25, 0.65)))
-	_add(st, _sphere(0.04, 6, 4), at + Vector3(0, -0.05, -0.006), skin_color, Basis.from_scale(Vector3(0.9, 1.25, 0.7)))
-	_add(st, _sphere(0.022, 6, 4), at + Vector3(-0.042 * side, 0.0, -0.016), skin_color, Basis(Vector3.BACK, 0.5 * side) * Basis.from_scale(Vector3(0.8, 1.6, 0.9)))
+func _add_mitten(st: SurfaceTool, at: Vector3, side: float, color: Color) -> void:
+	_add(st, _sphere(0.05, 7, 5), at, color, Basis.from_scale(Vector3(0.85, 1.25, 0.65)))
+	_add(st, _sphere(0.04, 6, 4), at + Vector3(0, -0.05, -0.006), color, Basis.from_scale(Vector3(0.9, 1.25, 0.7)))
+	_add(st, _sphere(0.022, 6, 4), at + Vector3(-0.042 * side, 0.0, -0.016), color, Basis(Vector3.BACK, 0.5 * side) * Basis.from_scale(Vector3(0.8, 1.6, 0.9)))
 
 
 ## Long straight legs ending in chunky dark boots.
@@ -241,7 +263,8 @@ func _build_legs() -> void:
 		var hip := Node3D.new()
 		hip.position = Vector3(0.085 * side, 0, 0)
 		_hips.add_child(hip)
-		var leg_color := overalls_color if wear_overalls else pants_color
+		var leg_color := _part("right_leg" if side > 0 else "left_leg", overalls_color if wear_overalls else pants_color)
+		var foot_color := _part("right_foot" if side > 0 else "left_foot", shoe_color)
 		var thigh := _begin()
 		_add(thigh, _cylinder(0.058, 0.066, LEG_UPPER, 8), Vector3(0, -LEG_UPPER * 0.5, 0), leg_color)
 		hip.add_child(_mesh(thigh))
@@ -253,8 +276,8 @@ func _build_legs() -> void:
 		if bandaged_leg and side > 0:
 			_add(shin, _cylinder(0.066, 0.066, 0.16, 8), Vector3(0, -LEG_LOWER * 0.45, 0), Color(0.95, 0.94, 0.9))
 		# Chunky rounded boot, pointing forward.
-		_add(shin, _sphere(0.5, 10, 6), Vector3(0, -LEG_LOWER - FOOT_HEIGHT * 0.5 + 0.012, -0.05), shoe_color, Basis.from_scale(Vector3(0.14, 0.13, 0.28)))
-		_add(shin, _sphere(0.07, 8, 5), Vector3(0, -LEG_LOWER + 0.0, 0.0), shoe_color)
+		_add(shin, _sphere(0.5, 10, 6), Vector3(0, -LEG_LOWER - FOOT_HEIGHT * 0.5 + 0.012, -0.05), foot_color, Basis.from_scale(Vector3(0.14, 0.13, 0.28)))
+		_add(shin, _sphere(0.07, 8, 5), Vector3(0, -LEG_LOWER + 0.0, 0.0), foot_color)
 		knee.add_child(_mesh(shin))
 		if side > 0:
 			_splint = _build_splint()
@@ -297,8 +320,27 @@ func _tube(st: SurfaceTool, a: Vector3, b: Vector3, ra: float, rb: float, color:
 
 # --- Posing and animation -------------------------------------------------------
 
+## Rebuilds the character with these body-part colours (part -> Color). Each part is
+## coloured on its own: a blue head, red body, green legs and yellow hands all work.
+func apply_part_colors(colors: Dictionary) -> void:
+	part_colors = colors.duplicate()
+	if _hips == null:
+		return
+	var was_sitting := _sit_amount
+	_build()
+	_sit_amount = was_sitting
+	_apply_base_pose()
+	if _held_item != null:
+		set_held_item(_held_item)
+
+
+func _part(part: String, fallback: Color) -> Color:
+	return part_colors.get(part, fallback)
+
+
 ## Puts an item in the right hand (null = empty). Guns are held up, aiming forward.
 func set_held_item(item: ItemData) -> void:
+	_held_item = item
 	if _hand_anchor == null:
 		return
 	for child in _hand_anchor.get_children():

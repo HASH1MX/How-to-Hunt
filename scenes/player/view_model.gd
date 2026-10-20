@@ -70,6 +70,7 @@ var _sway := Vector2.ZERO
 var _dip := 0.0
 var _dip_velocity := 0.0
 var _rng := RandomNumberGenerator.new()
+var _hand_color := Color(0.87, 0.7, 0.48)
 
 
 func _ready() -> void:
@@ -80,6 +81,7 @@ func _ready() -> void:
 		arm.add_child(_build_arm_mesh(-1.0 if i == 0 else 1.0))
 		add_child(arm)
 		_arms.append(arm)
+	Appearance.changed.connect(refresh_colors)
 	held_item_anchor = Node3D.new()
 	held_item_anchor.name = "HeldItem"
 	# In the middle of the fist, tilted up so long items stick up and forward out of the grip.
@@ -103,6 +105,15 @@ func punch(gap: float = -1.0) -> bool:
 	_cooldown = gap if gap >= 0.0 else punch_cooldown
 	punch_started.emit()
 	return true
+
+
+## Rebuilds the sleeves and hands in the colours chosen on the Customize screen.
+func refresh_colors() -> void:
+	for i in 2:
+		for child in _arms[i].get_children():
+			if child is MeshInstance3D:
+				child.queue_free()
+		_arms[i].add_child(_build_arm_mesh(-1.0 if i == 0 else 1.0))
 
 
 ## Like punch(), but always with the given arm (0 = left, 1 = right), for the knife.
@@ -251,6 +262,8 @@ func _update_punch(i: int, delta: float) -> float:
 ## One arm: a sleeve, a lighter cuff and a fist with curled fingers and a thumb.
 ## Built pointing forward (-Z), back of the hand up, with the fist at the front.
 func _build_arm_mesh(side: float) -> MeshInstance3D:
+	var sleeve_color := Appearance.get_color("right_arm" if side > 0 else "left_arm")
+	_hand_color = Appearance.get_color("right_hand" if side > 0 else "left_hand")
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var sleeve := CylinderMesh.new()
@@ -287,4 +300,4 @@ func _box(st: SurfaceTool, size: Vector3, at: Vector3, rot: Basis = Basis()) -> 
 	ball.height = 1.0
 	ball.radial_segments = 14
 	ball.rings = 8
-	LowPoly.add_smooth_shape(st, ball, Transform3D(rot * Basis.from_scale(size * 1.15), at), skin_color)
+	LowPoly.add_smooth_shape(st, ball, Transform3D(rot * Basis.from_scale(size * 1.15), at), _hand_color)
