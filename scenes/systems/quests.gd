@@ -15,10 +15,14 @@ extends Node
 signal changed
 ## A quest began or finished (kind is "started" or "completed"); for the on-screen banner.
 signal announced(kind: String, quest_id: String, reward: int)
+## The quest state is ready (the game just started, or a joined player got the host's state).
+## Characters use it to take their starting pose without animating.
+signal session_started
 
 ## quest id -> {status = "active" or "done", progress = [one number per objective]}
 var state := {}
 var _order: Array[String] = []
+var _got_state := false
 
 
 # --- Reading ------------------------------------------------------------------------------
@@ -64,6 +68,7 @@ func needed(kind: String, key: String) -> int:
 ## the first one; a joined player asks the host for the current state.
 func begin_session() -> void:
 	if Network.is_online() and not Network.is_host():
+		_got_state = false
 		_request_state.rpc_id(1)
 		return
 	state = {}
@@ -79,7 +84,13 @@ func begin_session() -> void:
 		_order.append(id)
 	if state.is_empty():
 		_start("mayday")
+	# Saves from before a follow-up quest existed: make sure finished quests' next ones began.
+	for id in state.keys():
+		if is_done(id):
+			for next_id in QuestLibrary.get_def(id).next:
+				_start(next_id)
 	changed.emit()
+	session_started.emit()
 
 
 # --- Reporting what happened -----------------------------------------------------------------
@@ -184,6 +195,9 @@ func _receive_state(new_state: Dictionary, new_order: Array) -> void:
 	state = new_state
 	_order.assign(new_order)
 	changed.emit()
+	if not _got_state:
+		_got_state = true
+		session_started.emit()
 
 
 ## Everyone (including the host) shows the banner; completing pays everyone their reward.

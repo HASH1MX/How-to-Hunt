@@ -13,5 +13,7 @@ extends Resource
 @export var value: int = 0
 ## Gives off a soft glow where it lies, so important story items are easy to spot.
 @export var glows := false
+## Also shows a tall faint beam of light, visible from far away (for items hidden around the island).
+@export var beacon := false
 ## Size of the item's collision box when it lies in the world.
 @export var collision_size: Vector3 = Vector3(0.3, 0.3, 0.3)

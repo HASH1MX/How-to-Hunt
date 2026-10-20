@@ -13,7 +13,7 @@ class_name QuestLibrary
 ##   next        - quests that start when this one is finished
 ##
 ## Island 1 story (Crash Forest), built in phases:
-##   mayday -> patch_me_up -> (more tasks later: rabbits, fire, plane parts, deer,
+##   mayday -> patch_me_up -> hungry_captain -> (more tasks later: rabbits, fire, plane parts, deer,
 ##   radar, flare gun, rescue helicopter...)
 
 static var _defs: Dictionary = {}
@@ -43,6 +43,40 @@ static func defs() -> Dictionary:
 				{type = "give", item = "cloth", npc = "gus", count = 1, text = "Bring some cloth"},
 			],
 			reward = 30,
+			next = ["hungry_captain"],
+		},
+		"hungry_captain": {
+			title = "Hungry Captain",
+			objectives = [
+				{type = "feed", item = "rabbit", npc = "gus", count = 3, text = "Feed Gus rabbits"},
+			],
+			reward = 40,
+			next = ["light_a_fire"],
+		},
+		"light_a_fire": {
+			title = "Light a Fire",
+			objectives = [
+				{type = "give", item = "stick", npc = "gus", count = 5, text = "Bring 5 sticks for a campfire"},
+			],
+			reward = 40,
+			next = ["scrap_hunt"],
+		},
+		"scrap_hunt": {
+			title = "Scrap Hunt",
+			objectives = [
+				{type = "give", item = "wire_bundle", npc = "gus", count = 1, text = "Find the wire bundle (east)"},
+				{type = "give", item = "battery", npc = "gus", count = 1, text = "Find the battery (western mountains)"},
+				{type = "give", item = "antenna", npc = "gus", count = 1, text = "Find the antenna (north-west)"},
+			],
+			reward = 60,
+			next = ["big_game"],
+		},
+		"big_game": {
+			title = "Big Game",
+			objectives = [
+				{type = "feed", item = "deer", npc = "gus", count = 1, text = "Feed Gus a deer"},
+			],
+			reward = 100,
 			next = [],
 		},
 	}

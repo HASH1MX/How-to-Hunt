@@ -40,11 +40,19 @@ enum Hat { NONE, PILOT_CAP, BEANIE }
 @export var bandaged_leg := false
 
 @export_group("Pose")
-@export var sitting := false:
+## Sit down or stand up. Changing it plays a smooth sit/stand animation
+## (use set_sitting_instantly for the starting pose).
+@export var sitting := false
+## A hurt, limping stance: weight on one leg, a slight lean.
+@export var injured_stance := false
+## A splint (two sticks tied with cloth) on the right shin.
+@export var splinted_leg := false:
 	set(value):
-		sitting = value
-		if is_node_ready():
-			_apply_base_pose()
+		splinted_leg = value
+		if _splint != null:
+			_splint.visible = value
+## A wooden crutch under the left arm, planted on the ground.
+@export var crutch := false
 
 ## Where the character looks (world position). Leave empty to look around idly.
 var look_target: Variant = null
@@ -81,6 +89,9 @@ var _time := 0.0
 var _talk_amount := 0.0
 var _walk_phase := 0.0
 var _swing := 0.0
+var _sit_amount := 0.0
+var _splint: Node3D
+var _crutch: MeshInstance3D
 var _crouch_amount := 0.0
 var _air_amount := 0.0
 var _punch_time := -1.0
@@ -140,6 +151,7 @@ func _build() -> void:
 	_build_head()
 	_build_arms()
 	_build_legs()
+	_build_crutch()
 
 
 ## A small tall egg-shaped head sitting right on the shoulders, with big googly eyes.
@@ -227,11 +239,59 @@ func _build_legs() -> void:
 		_add(shin, _sphere(0.5, 10, 6), Vector3(0, -LEG_LOWER - FOOT_HEIGHT * 0.5 + 0.012, -0.05), shoe_color, Basis.from_scale(Vector3(0.14, 0.13, 0.28)))
 		_add(shin, _sphere(0.07, 8, 5), Vector3(0, -LEG_LOWER + 0.0, 0.0), shoe_color)
 		knee.add_child(_mesh(shin))
+		if side > 0:
+			_splint = _build_splint()
+			knee.add_child(_splint)
 		_legs.append(hip)
 		_knees.append(knee)
 
 
+## Two sticks along the shin, tied on with three bands of cloth.
+func _build_splint() -> Node3D:
+	var st := _begin()
+	var wood := Color(0.55, 0.38, 0.22)
+	for z in [-0.07, 0.07]:
+		_tube(st, Vector3(0, -0.05, z), Vector3(0, -0.38, z), 0.02, 0.02, wood)
+	for y in [-0.1, -0.21, -0.32]:
+		_add(st, _cylinder(0.072, 0.072, 0.035, 10), Vector3(0, y, 0), Color(0.98, 0.9, 0.6))
+	var holder := Node3D.new()
+	holder.add_child(_mesh(st))
+	holder.visible = splinted_leg
+	return holder
+
+
+## A wooden crutch with a cross piece, standing next to the left arm.
+func _build_crutch() -> void:
+	var st := _begin()
+	var wood := Color(0.55, 0.38, 0.22)
+	_tube(st, Vector3(-0.27, 1.42, -0.03), Vector3(-0.42, 0.02, -0.14), 0.022, 0.026, wood)
+	_tube(st, Vector3(-0.2, 1.43, -0.03), Vector3(-0.36, 1.43, -0.03), 0.02, 0.02, wood)
+	_crutch = _mesh(st)
+	_crutch.visible = false
+	add_child(_crutch)
+
+
+## A rounded tube from `a` to `b`, built from the usual cylinder shape.
+func _tube(st: SurfaceTool, a: Vector3, b: Vector3, ra: float, rb: float, color: Color) -> void:
+	var along := b - a
+	var tube := _cylinder(rb, ra, along.length(), 8)
+	_add(st, tube, (a + b) * 0.5, color, Basis(Quaternion(Vector3.UP, along.normalized())))
+
+
 # --- Posing and animation -------------------------------------------------------
+
+## Sets sitting with no animation (the starting pose when the world loads).
+func set_sitting_instantly(value: bool) -> void:
+	sitting = value
+	_sit_amount = 1.0 if value else 0.0
+	if _hips != null:
+		_apply_base_pose()
+
+
+## 1 = fully seated, 0 = fully standing (in between while sitting down or getting up).
+func get_sit_amount() -> float:
+	return _sit_amount
+
 
 ## Chews happily for a moment (after being fed).
 func play_chew(seconds: float = 1.4) -> void:
@@ -247,7 +307,8 @@ func play_punch() -> void:
 func _apply_base_pose() -> void:
 	if _hips == null:
 		return
-	if sitting:
+	_sit_amount = 1.0 if sitting else _sit_amount
+	if _sit_amount >= 1.0:
 		_hips.position = Vector3(0, SEAT_HEIGHT, 0.05)
 		for i in 2:
 			_legs[i].rotation = Vector3(PI * 0.5, 0, 0.06 * (1 if i == 1 else -1))
@@ -268,7 +329,9 @@ func _process(delta: float) -> void:
 	# Breathing: the chest rises and falls slowly.
 	var breath := sin(_time * 1.8)
 	_torso.scale = Vector3(1.0 + breath * 0.008, 1.0 + breath * 0.012, 1.0 + breath * 0.008)
-	_torso.rotation.x = (0.08 if sitting else 0.02) + breath * 0.01
+	_torso.rotation.x = 0.02 + breath * 0.01
+	if _crutch != null:
+		_crutch.visible = crutch and _sit_amount < 0.45
 	_chew_time = maxf(_chew_time - delta, 0.0)
 	if _punch_time >= 0.0:
 		_punch_time += delta
@@ -282,8 +345,7 @@ func _process(delta: float) -> void:
 
 ## Walking, crouching and jumping poses (not used while sitting).
 func _animate_locomotion(delta: float) -> void:
-	if sitting:
-		return
+	_sit_amount = move_toward(_sit_amount, 1.0 if sitting else 0.0, delta / 1.1)
 	var blend := 1.0 - exp(-10.0 * delta)
 	_crouch_amount = lerpf(_crouch_amount, 1.0 if crouching else 0.0, blend)
 	_air_amount = lerpf(_air_amount, 1.0 if airborne else 0.0, blend)
@@ -309,6 +371,25 @@ func _animate_locomotion(delta: float) -> void:
 	_hips.position = Vector3(0, lerpf(HIP_HEIGHT, 0.8, _crouch_amount) + bob, 0)
 	var lean := -0.28 * _crouch_amount - (0.12 if sprinting else 0.0) * minf(_swing, 1.0)
 	_torso.rotation.x += lean
+	# Hurt stance when standing still: weight on the good leg, splinted leg out in front, leaning.
+	if injured_stance and _swing < 0.2:
+		var shift := sin(_time * 0.6) * 0.02
+		_legs[1].rotation.x += 0.1
+		_legs[0].rotation.x -= 0.08
+		_knees[0].rotation.x -= 0.12
+		_torso.rotation.z = 0.05 + shift
+		_torso.rotation.x += 0.05
+	else:
+		_torso.rotation.z = 0.0
+	# Sitting down / getting up: blend from the standing pose to the seated one.
+	var seat := smoothstep(0.0, 1.0, _sit_amount)
+	if seat > 0.0:
+		for i in 2:
+			_legs[i].rotation = _legs[i].rotation.lerp(Vector3(PI * 0.5, 0, 0.06 * (1 if i == 1 else -1)), seat)
+			_knees[i].rotation = _knees[i].rotation.lerp(Vector3(-PI * 0.5 + 0.12, 0, 0), seat)
+		_hips.position = _hips.position.lerp(Vector3(0, SEAT_HEIGHT, 0.05), seat)
+		# Lean forward while pushing up or lowering down.
+		_torso.rotation.x += 0.06 * seat + sin(seat * PI) * 0.4
 
 
 func _animate_head(delta: float) -> void:
@@ -334,15 +415,14 @@ func _animate_arms() -> void:
 	for i in 2:
 		var side := -1.0 if i == 0 else 1.0
 		var shoulder := _shoulders[i]
-		if sitting:
-			# Hands resting on the knees.
-			shoulder.rotation = Vector3(0.75, 0, -0.12 * side)
-		else:
-			shoulder.rotation = Vector3(sin(_time * 1.8 + i) * 0.02, 0, 0.07 * side)
-			# Arms swing opposite to the legs while walking, and go up when jumping.
-			shoulder.rotation.x += sin(_walk_phase + PI * (1 - i)) * 0.75 * minf(_swing, 1.3)
-			shoulder.rotation.x += 0.9 * _air_amount + 0.35 * _crouch_amount
-			shoulder.rotation.z += 0.5 * side * _air_amount
+		shoulder.rotation = Vector3(sin(_time * 1.8 + i) * 0.02, 0, 0.07 * side)
+		# Arms swing opposite to the legs while walking, and go up when jumping.
+		shoulder.rotation.x += sin(_walk_phase + PI * (1 - i)) * 0.75 * minf(_swing, 1.3)
+		shoulder.rotation.x += 0.9 * _air_amount + 0.35 * _crouch_amount
+		shoulder.rotation.z += 0.5 * side * _air_amount
+		# Sitting: hands rest on the knees (blended, so sitting down and getting up are smooth).
+		var seat := smoothstep(0.0, 1.0, _sit_amount)
+		shoulder.rotation = shoulder.rotation.lerp(Vector3(0.75, 0, -0.12 * side), seat)
 		if _punch_time >= 0.0 and i == _punch_arm:
 			shoulder.rotation.x += 1.6 * sin(_punch_time / PUNCH_DURATION * PI)
 	# Talking: the right arm comes up and waves around while explaining.

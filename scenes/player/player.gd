@@ -480,6 +480,8 @@ func _on_punch_hit() -> void:
 		return
 	var target: Object = hit.collider
 	punch_connected.emit(target.has_method("take_hit"), hit.position)
+	if target.is_in_group("trees"):
+		WorldSync.shake_tree(self, hit.position)
 	if target.has_method("take_hit"):
 		# Animals (later) will have take_hit and lose health.
 		target.take_hit(punch_damage, self, hit.position)

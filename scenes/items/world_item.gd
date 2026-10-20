@@ -46,6 +46,27 @@ func _ready() -> void:
 		glow.shadow_enabled = false
 		glow.position = Vector3(0, 0.3, 0)
 		add_child(glow)
+	if item.beacon:
+		# A tall faint beam so hidden quest items can be spotted from far away.
+		var beam := MeshInstance3D.new()
+		var tube := CylinderMesh.new()
+		tube.top_radius = 0.05
+		tube.bottom_radius = 0.09
+		tube.height = 18.0
+		tube.radial_segments = 8
+		tube.rings = 1
+		beam.mesh = tube
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		material.albedo_color = Color(item.icon_color.r, item.icon_color.g, item.icon_color.b, 0.28)
+		material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		beam.material_override = material
+		beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		beam.position = Vector3(0, 9.0, 0)
+		beam.visibility_range_end = 140.0
+		add_child(beam)
 	var shape := BoxShape3D.new()
 	shape.size = item.collision_size
 	var collider := CollisionShape3D.new()

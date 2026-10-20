@@ -61,6 +61,7 @@ const GROUPS := {
 	"deer_snort": [SYNTH, "deer_snort.wav", 1],
 	"blip": [SYNTH, "blip_%d.wav", 6],
 	"munch": [SYNTH, "munch_%d.wav", 3],
+	"fire_loop": [SYNTH, "fire_loop.wav", 1],
 	"wind_loop": [SYNTH, "wind_loop.wav", 1],
 	"waves_loop": [SYNTH, "waves_loop.wav", 1],
 }

@@ -30,6 +30,13 @@ static func _build_items() -> void:
 	_items[&"first_aid_kit"].glows = true
 	_add(&"cloth", "Cloth", Color(0.98, 0.9, 0.6), _cloth_mesh(), Vector3(0.3, 0.1, 0.3))
 	_items[&"cloth"].glows = true
+	# Parts of the plane's radar, scattered around the island (see QuestLibrary: scrap_hunt).
+	_add(&"wire_bundle", "Wire Bundle", Color(0.95, 0.55, 0.15), _wire_mesh(), Vector3(0.3, 0.12, 0.3))
+	_add(&"battery", "Battery", Color(0.3, 0.85, 0.4), _battery_mesh(), Vector3(0.22, 0.2, 0.14))
+	_add(&"antenna", "Antenna", Color(0.45, 0.7, 1.0), _antenna_mesh(), Vector3(0.12, 0.12, 0.9))
+	for id in [&"wire_bundle", &"battery", &"antenna"]:
+		_items[id].glows = true
+		_items[id].beacon = true
 	# Animals: when one is hunted its body becomes this item. Feed it to Captain Gus for cash.
 	# The price follows how hard the animal is to catch:
 	#   chicken  20 hp, never runs away, slow             -> $6
@@ -91,6 +98,74 @@ static func _cloth_mesh() -> Mesh:
 		var at := Vector3(rng.randf_range(-0.07, 0.07), 0.03 + i * 0.012, rng.randf_range(-0.07, 0.07))
 		var size := Vector3(rng.randf_range(0.26, 0.36), rng.randf_range(0.05, 0.08), rng.randf_range(0.2, 0.3))
 		LowPoly.add_shape(st, blob, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(size), at), blue.lightened(0.05 * i), 0.02, 0.08, rng)
+	return LowPoly.commit(st)
+
+
+## A coil of orange wire with loose ends.
+static func _wire_mesh() -> Mesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 51
+	var st := LowPoly.begin()
+	var coil := TorusMesh.new()
+	coil.inner_radius = 0.07
+	coil.outer_radius = 0.14
+	coil.rings = 10
+	coil.ring_segments = 6
+	for i in 3:
+		LowPoly.add_shape(st, coil, Transform3D(Basis(Vector3.RIGHT, 0.0), Vector3(0, 0.04 + i * 0.045, 0)), Color(0.95, 0.5, 0.12).lightened(0.06 * i), 0.0, 0.06, rng)
+	var tail := CylinderMesh.new()
+	tail.top_radius = 0.012
+	tail.bottom_radius = 0.012
+	tail.height = 0.22
+	tail.radial_segments = 5
+	tail.rings = 1
+	LowPoly.add_shape(st, tail, Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3(0.2, 0.05, 0.06)), Color(0.95, 0.5, 0.12), 0.0, 0.0, rng)
+	LowPoly.add_shape(st, tail, Transform3D(Basis(Vector3.BACK, PI * 0.5).rotated(Vector3.UP, 0.7), Vector3(-0.16, 0.12, 0.15)), Color(0.2, 0.6, 0.9), 0.0, 0.0, rng)
+	return LowPoly.commit(st)
+
+
+## A boxy battery with two terminals on top.
+static func _battery_mesh() -> Mesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 52
+	var st := LowPoly.begin()
+	var body := BoxMesh.new()
+	body.size = Vector3(0.2, 0.16, 0.12)
+	LowPoly.add_shape(st, body, Transform3D(Basis(), Vector3(0, 0.08, 0)), Color(0.18, 0.2, 0.24), 0.0, 0.05, rng)
+	var stripe := BoxMesh.new()
+	stripe.size = Vector3(0.202, 0.05, 0.122)
+	LowPoly.add_shape(st, stripe, Transform3D(Basis(), Vector3(0, 0.1, 0)), Color(0.95, 0.8, 0.15), 0.0, 0.0, rng)
+	var terminal := CylinderMesh.new()
+	terminal.top_radius = 0.02
+	terminal.bottom_radius = 0.02
+	terminal.height = 0.04
+	terminal.radial_segments = 6
+	terminal.rings = 1
+	LowPoly.add_shape(st, terminal, Transform3D(Basis(), Vector3(-0.06, 0.18, 0)), Color(0.8, 0.8, 0.82), 0.0, 0.0, rng)
+	LowPoly.add_shape(st, terminal, Transform3D(Basis(), Vector3(0.06, 0.18, 0)), Color(0.85, 0.2, 0.2), 0.0, 0.0, rng)
+	return LowPoly.commit(st)
+
+
+## A long metal rod with three cross pieces, lying along Z.
+static func _antenna_mesh() -> Mesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 53
+	var st := LowPoly.begin()
+	var rod := CylinderMesh.new()
+	rod.top_radius = 0.012
+	rod.bottom_radius = 0.016
+	rod.height = 0.9
+	rod.radial_segments = 6
+	rod.rings = 1
+	var metal := Color(0.75, 0.77, 0.8)
+	LowPoly.add_shape(st, rod, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0.03, 0)), metal, 0.0, 0.06, rng)
+	var bar := BoxMesh.new()
+	for i in 3:
+		bar.size = Vector3(0.26 - i * 0.06, 0.012, 0.012)
+		LowPoly.add_shape(st, bar, Transform3D(Basis(), Vector3(0, 0.03, -0.25 + i * 0.16)), metal, 0.0, 0.04, rng)
+	var base := BoxMesh.new()
+	base.size = Vector3(0.1, 0.05, 0.1)
+	LowPoly.add_shape(st, base, Transform3D(Basis(), Vector3(0, 0.03, 0.4)), Color(0.2, 0.22, 0.26), 0.0, 0.04, rng)
 	return LowPoly.commit(st)
 
 

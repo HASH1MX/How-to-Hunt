@@ -31,6 +31,61 @@ func _ready() -> void:
 		start_game()
 
 
+## Sticks lie around under the trees (and more fall out when you punch a tree).
+const STICK_COUNT := 45
+## Where the radar parts are: [angle in degrees, distance from the middle]. Wires east,
+## battery up the western mountains, antenna north-west (see GusStory).
+const SCRAP_SPOTS := {
+	&"wire_bundle": [35.0, 75.0],
+	&"battery": [150.0, 120.0],
+	&"antenna": [250.0, 100.0],
+}
+## Where the campfire is built, next to Gus.
+const CAMPFIRE_AT := Vector2(-6.4, -0.3)
+
+
+func _scatter_sticks(world_sync: WorldSync) -> void:
+	if Network.is_online() and not Network.is_host():
+		return # The host's items are sent to us.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7777
+	var stick := ItemLibrary.get_item(&"stick")
+	var terrain: Terrain = $Terrain
+	var placed := 0
+	var tries := 0
+	while placed < STICK_COUNT and tries < 600:
+		tries += 1
+		var angle := rng.randf() * TAU
+		var dist := sqrt(rng.randf_range(22.0 * 22.0, 135.0 * 135.0))
+		var x := cos(angle) * dist
+		var z := sin(angle) * dist
+		var height := terrain.get_height(x, z)
+		if height < terrain.water_level + 1.5 or dist > terrain.mountain_radius * 0.92:
+			continue
+		var item := WorldSync.spawn_item(self, stick, Vector3(x, height + 0.4, z), Vector3.ZERO)
+		if item != null:
+			item.rotation.y = rng.randf() * TAU
+		placed += 1
+
+
+## The three radar parts, each with a beam of light, unless they were already handed over.
+func _place_scrap() -> void:
+	if Network.is_online() and not Network.is_host():
+		return
+	if Quests.is_done("scrap_hunt"):
+		return
+	var terrain: Terrain = $Terrain
+	var objective_index := {&"wire_bundle": 0, &"battery": 1, &"antenna": 2}
+	for id in SCRAP_SPOTS:
+		if Quests.get_progress("scrap_hunt", objective_index[id]) > 0:
+			continue
+		var angle := deg_to_rad(SCRAP_SPOTS[id][0])
+		var dist: float = SCRAP_SPOTS[id][1]
+		var x := cos(angle) * dist
+		var z := sin(angle) * dist
+		WorldSync.spawn_item(self, ItemLibrary.get_item(id), Vector3(x, terrain.get_height(x, z) + 0.5, z), Vector3.ZERO)
+
+
 ## The first-aid kit and cloth Gus asks for lie near the wreck until they've been handed over.
 func _place_quest_items(world_sync: WorldSync) -> void:
 	var items := get_node_or_null("QuestItems")
@@ -73,9 +128,17 @@ func start_game() -> void:
 		animals.terrain = $Terrain
 		animals.sync = world_sync
 		add_child(animals)
+	# Gus's campfire (lit by the quest "Light a Fire").
+	var campfire := Campfire.new()
+	campfire.name = "Campfire"
+	add_child(campfire)
+	campfire.position = Vector3(CAMPFIRE_AT.x, $Terrain.get_height(CAMPFIRE_AT.x, CAMPFIRE_AT.y), CAMPFIRE_AT.y)
 	# The story's quests (a joined player gets them from the host).
+	WorldSync.reset_shaken()
 	Quests.begin_session()
 	_place_quest_items(world_sync)
+	_scatter_sticks(world_sync)
+	_place_scrap()
 	var player := PLAYER_SCENE.instantiate()
 	player.name = "LocalPlayer"
 	# Set the position before adding, so the player remembers it as its respawn point.

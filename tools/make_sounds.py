@@ -294,6 +294,22 @@ def make_munch(rng):
         save("munch_%d" % i, track, 0.7)
 
 
+def make_fire(rng):
+    """A campfire: a soft low roar with random crackles and pops (loops)."""
+    seconds = 12.0
+    n = int(seconds * RATE)
+    roar = scale(lowpass(noise(seconds, rng), [260.0 + 140.0 * math.sin(2 * math.pi * 3 * i / n) for i in range(n)]), 0.55)
+    crackle = [0.0] * n
+    for _ in range(95):
+        start = rng.randrange(0, n - 400)
+        length = rng.randrange(40, 260)
+        amp = rng.uniform(0.15, 1.0) ** 2
+        for k in range(length):
+            crackle[start + k] += rng.uniform(-1.0, 1.0) * amp * (1.0 - k / length) ** 2
+    crackle = highpass(crackle, 1200.0)
+    save("fire_loop", loopable(mix(roar, scale(crackle, 0.9)), 1.5), 0.7)
+
+
 def main():
     rng = random.Random(12345)
     make_wind(rng)
@@ -304,6 +320,7 @@ def main():
     make_animals(rng)
     make_blips(rng)
     make_munch(rng)
+    make_fire(rng)
 
 
 if __name__ == "__main__":

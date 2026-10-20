@@ -41,6 +41,45 @@ func _ready() -> void:
 		_client_ready.rpc_id(1)
 
 
+## Tree spots that have already given up their stick (cells 2 m wide), so each tree gives one.
+static var _shaken := {}
+
+
+## Forgets which trees were shaken (a new game starts).
+static func reset_shaken() -> void:
+	_shaken.clear()
+
+
+## A punch landed on a tree: one stick falls out the first time. Works in solo games, for the
+## host, and for joined players (who ask the host).
+static func shake_tree(from: Node, position: Vector3) -> void:
+	var sync := find(from)
+	if sync != null and Network.is_online():
+		if Network.is_host():
+			sync.host_shake(position, Network.get_my_id())
+		else:
+			sync.request_shake(position)
+		return
+	if _take_tree(position):
+		spawn_item(from.get_parent(), ItemLibrary.get_item(&"stick"), _stick_drop_spot(position), _stick_drop_velocity(), 1)
+
+
+static func _take_tree(position: Vector3) -> bool:
+	var cell := Vector2i(floori(position.x / 2.0), floori(position.z / 2.0))
+	if _shaken.has(cell):
+		return false
+	_shaken[cell] = true
+	return true
+
+
+static func _stick_drop_spot(position: Vector3) -> Vector3:
+	return position + Vector3(randf_range(-0.4, 0.4), 1.6, randf_range(-0.4, 0.4))
+
+
+static func _stick_drop_velocity() -> Vector3:
+	return Vector3(randf_range(-0.8, 0.8), 0.6, randf_range(-0.8, 0.8))
+
+
 ## The WorldSync of the running game, or null (solo games have none).
 static func find(from: Node) -> WorldSync:
 	return from.get_tree().get_first_node_in_group("world_sync") as WorldSync
@@ -48,20 +87,20 @@ static func find(from: Node) -> WorldSync:
 
 ## Spawns an item in the world, from anywhere in the game: the host spawns it and tells
 ## everyone; a joined player asks the host to; in a solo game it just appears.
-static func spawn_item(parent: Node, item: ItemData, position: Vector3, velocity: Vector3, dropper: int = 0) -> void:
+static func spawn_item(parent: Node, item: ItemData, position: Vector3, velocity: Vector3, dropper: int = 0) -> WorldItem:
 	var sync := find(parent)
 	if sync != null and Network.is_online():
 		if Network.is_host():
-			sync.host_spawn(item, position, velocity, dropper)
-		else:
-			sync.request_spawn(item, position, velocity)
-		return
+			return sync.host_spawn(item, position, velocity, dropper)
+		sync.request_spawn(item, position, velocity)
+		return null
 	var drop := WorldItem.new()
 	drop.item = item
 	drop.dropped_by = dropper
 	parent.add_child(drop)
 	drop.global_position = position
 	drop.linear_velocity = velocity
+	return drop
 
 
 func _physics_process(delta: float) -> void:
@@ -115,7 +154,7 @@ func register_existing_item(item: WorldItem) -> void:
 			_item_settled.rpc(item.net_id, item.global_position, item.rotation))
 
 
-func host_spawn(item: ItemData, position: Vector3, velocity: Vector3, dropper: int = 0) -> void:
+func host_spawn(item: ItemData, position: Vector3, velocity: Vector3, dropper: int = 0) -> WorldItem:
 	var drop := WorldItem.new()
 	drop.item = item
 	drop.dropped_by = dropper
@@ -124,6 +163,17 @@ func host_spawn(item: ItemData, position: Vector3, velocity: Vector3, dropper: i
 	drop.linear_velocity = velocity
 	register_existing_item(drop)
 	_item_spawned.rpc(drop.net_id, String(item.id), position, velocity)
+	return drop
+
+
+## Host: a tree was punched (by the host, or a joined player's request that checked out).
+func host_shake(position: Vector3, who: int) -> void:
+	if _take_tree(position):
+		host_spawn(ItemLibrary.get_item(&"stick"), _stick_drop_spot(position), _stick_drop_velocity(), who)
+
+
+func request_shake(position: Vector3) -> void:
+	_request_shake.rpc_id(1, position)
 
 
 func remove_item(id: int) -> void:
@@ -180,6 +230,12 @@ func _request_spawn(item_id: String, position: Vector3, velocity: Vector3) -> vo
 	if remote == null or not ItemLibrary.has_item(StringName(item_id)):
 		return
 	host_spawn(ItemLibrary.get_item(StringName(item_id)), position, velocity.limit_length(8.0), multiplayer.get_remote_sender_id())
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_shake(position: Vector3) -> void:
+	if _checked_player(position, REACH + 2.0) != null:
+		host_shake(position, multiplayer.get_remote_sender_id())
 
 
 @rpc("any_peer", "call_remote", "reliable")

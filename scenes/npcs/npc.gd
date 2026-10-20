@@ -23,6 +23,10 @@ const INTERACT_LAYER := 1 << 3
 @export_group("Behaviour")
 ## Hungry: eats animal bodies dropped in front of his face and pays the player for them.
 @export var eats_items := false
+## Gets up from the seat once this quest is done (limping, leaning on a crutch).
+@export var stand_after_quest := ""
+## Where he stands (relative to the seat) after getting up.
+@export var stand_offset := Vector3(0.9, 0.0, -0.2)
 ## Sits on an airplane seat instead of standing.
 @export var sits_on_seat := false
 ## Looks at players closer than this.
@@ -33,13 +37,25 @@ const INTERACT_LAYER := 1 << 3
 
 var has_talked := false
 var _mouth: Area3D
+var _collision: CollisionShape3D
+var _collision_start := Vector3.ZERO
+var _was_sitting := false
+const SEATED_MOUTH := Vector3(0, 1.22, -0.2)
+const STANDING_MOUTH := Vector3(0, 1.72, -0.2)
+const SEATED_LABEL := 2.05
+const STANDING_LABEL := 2.4
 
 
 func _ready() -> void:
 	collision_layer = 1 | INTERACT_LAYER # Solid, and found by the interact ray.
 	collision_mask = 0
+	_collision = get_node_or_null("CollisionShape3D")
+	if _collision != null:
+		_collision_start = _collision.position
 	if sits_on_seat:
-		model.sitting = true
+		model.set_sitting_instantly(not _wants_to_stand())
+		_was_sitting = model.sitting
+		Quests.session_started.connect(_snap_to_story)
 		var seat := MeshInstance3D.new()
 		seat.mesh = PropLibrary.airplane_seat(21)
 		add_child(seat)
@@ -55,7 +71,7 @@ func _ready() -> void:
 		var shape := CollisionShape3D.new()
 		shape.shape = sphere
 		_mouth.add_child(shape)
-		_mouth.position = Vector3(0, 1.22 if sits_on_seat else 1.72, -0.2)
+		_mouth.position = SEATED_MOUTH if sits_on_seat else STANDING_MOUTH
 		add_child(_mouth)
 		_mouth.body_entered.connect(_on_mouth_entered)
 
@@ -141,8 +157,7 @@ func _try_give(player: Node) -> bool:
 	var count: int = player.inventory.take_from_active(wanted)
 	if count <= 0:
 		return false
-	var finishes := GusStory._missing("patch_me_up", String(item.id), count) == "" and Quests.is_active("patch_me_up")
-	var lines := GusStory.thanks_lines(String(item.id), count, finishes)
+	var lines := GusStory.thanks_lines(String(item.id), count)
 	Sfx.play("pickup", -4.0, 0.05)
 	model.talking = true
 	player.start_dialogue(display_name, lines, func(): model.talking = false)
@@ -173,7 +188,43 @@ func _on_dialogue_finished(first_time: bool) -> void:
 			hud.show_tip(quest_title, quest_body, 30.0)
 
 
+## True once the quest that lets him up is finished.
+func _wants_to_stand() -> bool:
+	return stand_after_quest != "" and Quests.is_done(stand_after_quest)
+
+
+## The world just loaded its quests: take the right pose straight away (no animation).
+func _snap_to_story() -> void:
+	model.set_sitting_instantly(not _wants_to_stand())
+	_was_sitting = model.sitting
+	_apply_stand_state()
+
+
+## Splint, crutch, hurt stance, and where he is, follow how far he has got up.
+func _apply_stand_state() -> void:
+	var up := 1.0 - model.get_sit_amount()
+	var healed := _wants_to_stand()
+	model.splinted_leg = healed
+	model.crutch = healed
+	model.injured_stance = healed
+	var offset := stand_offset * up
+	model.position = offset
+	if _collision != null:
+		_collision.position = _collision_start + offset
+	if _mouth != null:
+		_mouth.position = SEATED_MOUTH.lerp(stand_offset + STANDING_MOUTH, up)
+	name_label.position.y = lerpf(SEATED_LABEL, STANDING_LABEL, up)
+
+
 func _process(_delta: float) -> void:
+	if sits_on_seat:
+		model.sitting = not _wants_to_stand()
+		_apply_stand_state()
+		if _was_sitting and not model.sitting:
+			# He just got up!
+			FloatingText.spawn(get_parent(), global_position + Vector3(0, 2.5, 0), "Ta-da!", Color(1.0, 0.95, 0.7))
+			Sfx.play_at("ui_confirm", global_position + Vector3(0, 1.5, 0), -4.0, 0.02, 30.0)
+		_was_sitting = model.sitting
 	# Look at the closest player within reach, otherwise look around.
 	var closest: Node3D = null
 	var closest_distance := look_distance

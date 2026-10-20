@@ -28,6 +28,8 @@ extends Node3D
 @export var grass_count: int = 100000
 
 const MODEL_VARIANTS := 4
+## Where Gus's campfire is (no grass or small props around it); keep in step with CrashForest.CAMPFIRE_AT.
+const CAMPFIRE_SPOT := Vector2(-6.4, -0.3)
 const CHUNK_SIZE := 25.0
 const GRASS_VIEW_DISTANCE := 70.0
 const SMALL_PROP_VIEW_DISTANCE := 50.0
@@ -112,6 +114,8 @@ func _scatter(group: String, builder: Callable, seed_base: int, count: int, rng:
 	if collision != "none":
 		body = StaticBody3D.new()
 		body.name = group + "Colliders"
+		if collision == "trunk":
+			body.add_to_group("trees") # Punching a tree can shake a stick loose (see WorldSync.shake_tree).
 		add_child(body)
 
 	# batches[Vector3i(variant, chunk_x, chunk_z)] = [transforms, colors]
@@ -203,6 +207,9 @@ func _random_spot(rng: RandomNumberGenerator, min_dist: float, max_edge: float) 
 
 ## True if this spot is inside the area kept clear around the crash site.
 func _is_cleared(x: float, z: float) -> bool:
+	# Gus's campfire needs a bare patch around it too.
+	if Vector2(x - CAMPFIRE_SPOT.x, z - CAMPFIRE_SPOT.y).length() < 3.4:
+		return true
 	if no_grass_center == null:
 		return false
 	var c := no_grass_center.position
