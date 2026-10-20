@@ -207,14 +207,14 @@ func _turn_toward_safety() -> void:
 # --- Getting hit and dying ------------------------------------------------------------
 
 ## Called by punches (and later, weapons).
-func take_hit(amount: float, from: Node, at: Vector3) -> void:
+func take_hit(amount: float, from: Node, at: Vector3, weapon_id: String = "") -> void:
 	if state == State.DEAD:
 		return
 	if puppet:
 		# The host decides what a punch does, then tells everyone (see puppet_hit).
 		var sync := WorldSync.find(self)
 		if sync != null:
-			sync.request_animal_hit(net_id, amount, at)
+			sync.request_animal_hit(net_id, amount, at, weapon_id)
 		return
 	health -= amount
 	DamageNumber.spawn(self, at, amount)

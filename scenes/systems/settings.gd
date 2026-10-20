@@ -20,6 +20,8 @@ const REBINDABLE_ACTIONS := [
 	["crouch", "Crouch"],
 	["jump", "Jump"],
 	["attack", "Punch / Use"],
+	["aim", "Aim"],
+	["reload", "Reload"],
 	["interact", "Interact / Talk"],
 	["drop", "Drop Item"],
 	["slot_1", "Slot 1"],

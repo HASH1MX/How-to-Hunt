@@ -12,7 +12,8 @@ signal item_dropped(item: ItemData)
 signal item_picked_up(item: ItemData)
 
 const SLOT_COUNT := 4
-## Items of the same kind stack up to this many in one slot (or in the hand).
+## Most items stack up to this many in one slot (or in the hand); weapons and keys
+## (ItemData.max_stack) only one.
 const MAX_STACK := 5
 
 var slots: Array[ItemData] = []
@@ -34,7 +35,7 @@ func _init() -> void:
 ## if every slot is taken), then the new item goes in the hand.
 func pick_up(item: ItemData) -> bool:
 	if hand_item != null and hand_item.id == item.id:
-		if hand_count < MAX_STACK:
+		if hand_count < item.max_stack:
 			hand_count += 1
 		else:
 			var slot := _find_slot_with_room(item)
@@ -55,14 +56,14 @@ func pick_up(item: ItemData) -> bool:
 ## False if picking this item up would fail (same kind as the hand stack, which is
 ## full, and no slot has room).
 func can_pick_up(item: ItemData) -> bool:
-	if hand_item != null and hand_item.id == item.id and hand_count >= MAX_STACK:
+	if hand_item != null and hand_item.id == item.id and hand_count >= item.max_stack:
 		return _find_slot_with_room(item) >= 0
 	return true
 
 
 func _find_slot_with_room(item: ItemData) -> int:
 	for i in SLOT_COUNT:
-		if slots[i] != null and slots[i].id == item.id and slot_counts[i] < MAX_STACK:
+		if slots[i] != null and slots[i].id == item.id and slot_counts[i] < item.max_stack:
 			return i
 	return -1
 
@@ -74,7 +75,7 @@ func _stash_hand_stack() -> void:
 		return
 	var slot := _find_slot_with_room(hand_item)
 	while hand_item != null and slot >= 0:
-		var moved := mini(hand_count, MAX_STACK - slot_counts[slot])
+		var moved := mini(hand_count, hand_item.max_stack - slot_counts[slot])
 		slot_counts[slot] += moved
 		hand_count -= moved
 		if hand_count <= 0:
@@ -102,7 +103,7 @@ func press_slot(index: int) -> void:
 	if hand_item != null:
 		var existing := slots[index]
 		if existing != null and existing.id == hand_item.id:
-			var moved := mini(hand_count, MAX_STACK - slot_counts[index])
+			var moved := mini(hand_count, hand_item.max_stack - slot_counts[index])
 			slot_counts[index] += moved
 			hand_count -= moved
 			if hand_count <= 0:
@@ -208,12 +209,12 @@ func from_dict(saved: Dictionary) -> void:
 		var item := _item_from(entry)
 		if item != null:
 			slots[i] = item
-			slot_counts[i] = clampi(int(entry.get("count", 1)), 1, MAX_STACK)
+			slot_counts[i] = clampi(int(entry.get("count", 1)), 1, item.max_stack)
 	var hand: Dictionary = saved.get("hand", {})
 	var held := _item_from(hand)
 	if held != null:
 		hand_item = held
-		hand_count = clampi(int(hand.get("count", 1)), 1, MAX_STACK)
+		hand_count = clampi(int(hand.get("count", 1)), 1, held.max_stack)
 	selected_slot = clampi(int(saved.get("selected", 0)), 0, SLOT_COUNT - 1)
 	changed.emit()
 
@@ -222,6 +223,16 @@ func _item_from(entry: Dictionary) -> ItemData:
 	if not entry.has("id"):
 		return null
 	return ItemLibrary.get_item(StringName(entry.id))
+
+
+## True if the player has this item anywhere (hand or slots).
+func has_item(id: StringName) -> bool:
+	if hand_item != null and hand_item.id == id:
+		return true
+	for item in slots:
+		if item != null and item.id == id:
+			return true
+	return false
 
 
 ## The item the player is currently holding: the hand item if there is one,

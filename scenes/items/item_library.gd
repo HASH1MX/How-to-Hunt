@@ -30,6 +30,26 @@ static func _build_items() -> void:
 	_items[&"first_aid_kit"].glows = true
 	_add(&"cloth", "Cloth", Color(0.98, 0.9, 0.6), _cloth_mesh(), Vector3(0.3, 0.1, 0.3))
 	_items[&"cloth"].glows = true
+	# Weapons. Damage numbers are per hit (shotgun: per pellet). Animals: rabbit 30 hp,
+	# chicken/squirrel 20, deer 80 (Island 2 ones are tougher).
+	_weapon(&"knife", "Knife", Color(0.82, 0.84, 0.86), WeaponMeshes.knife(), Vector3(0.06, 0.05, 0.35),
+			{use = "melee", damage = 25.0, reach = 2.7, fire_gap = 0.35, hold = "knife"})
+	_weapon(&"pistol", "Pistol", Color(0.3, 0.32, 0.36), WeaponMeshes.pistol(), Vector3(0.06, 0.16, 0.24),
+			{use = "gun", damage = 25.0, reach = 70.0, fire_gap = 0.22, magazine = 8, reload_time = 1.3, ammo = "pistol", spread = 1.0, recoil = 0.5, sound = "gun_pistol", hold = "pistol", price = 150})
+	_weapon(&"double_barrel", "Double-Barrel Shotgun", Color(0.48, 0.3, 0.16), WeaponMeshes.double_barrel(), Vector3(0.08, 0.14, 0.95),
+			{use = "gun", damage = 11.0, pellets = 8, reach = 32.0, fire_gap = 0.55, magazine = 2, reload_time = 2.2, ammo = "shells", spread = 6.0, recoil = 1.4, sound = "gun_shotgun", hold = "rifle", price = 400})
+	_weapon(&"smg", "SMG", Color(0.2, 0.21, 0.24), WeaponMeshes.smg(), Vector3(0.07, 0.28, 0.4),
+			{use = "gun", damage = 12.0, reach = 45.0, fire_gap = 0.075, automatic = true, magazine = 30, reload_time = 1.8, ammo = "smg", spread = 3.0, recoil = 0.25, sound = "gun_smg", hold = "pistol", price = 650})
+	_weapon(&"assault_rifle", "Assault Rifle", Color(0.62, 0.52, 0.36), WeaponMeshes.assault_rifle(), Vector3(0.08, 0.25, 0.85),
+			{use = "gun", damage = 20.0, reach = 95.0, fire_gap = 0.11, automatic = true, magazine = 30, reload_time = 2.0, ammo = "rifle", spread = 1.6, recoil = 0.35, sound = "gun_rifle", hold = "rifle", price = 900})
+	_weapon(&"sniper", "Sniper Rifle", Color(0.86, 0.66, 0.2), WeaponMeshes.sniper(), Vector3(0.08, 0.22, 1.25),
+			{use = "gun", damage = 130.0, reach = 260.0, fire_gap = 1.2, magazine = 5, reload_time = 2.6, ammo = "sniper", spread = 0.0, zoom_fov = 18.0, recoil = 2.0, sound = "gun_sniper", hold = "rifle", price = 1200})
+	_weapon(&"flare_gun", "Flare Gun", Color(0.95, 0.42, 0.1), WeaponMeshes.flare_gun(), Vector3(0.06, 0.16, 0.24),
+			{use = "flare", fire_gap = 1.5, recoil = 0.8, sound = "flare_shot", hold = "pistol"})
+	_add(&"case_key", "Case Key", Color(0.9, 0.72, 0.28), WeaponMeshes.key(), Vector3(0.08, 0.04, 0.16))
+	_items[&"case_key"].max_stack = 1
+	_items[&"case_key"].glows = true
+	_items[&"flare_gun"].glows = true
 	# Parts of the plane's radar, scattered around the island (see QuestLibrary: scrap_hunt).
 	_add(&"wire_bundle", "Wire Bundle", Color(0.95, 0.55, 0.15), _wire_mesh(), Vector3(0.3, 0.12, 0.3))
 	_add(&"battery", "Battery", Color(0.3, 0.85, 0.4), _battery_mesh(), Vector3(0.22, 0.2, 0.14))
@@ -58,6 +78,26 @@ static func _add(id: StringName, display_name: String, icon_color: Color, mesh: 
 	item.collision_size = collision_size
 	item.value = value
 	_items[id] = item
+
+
+## Adds a weapon (one per slot) with its stats (see ItemData's "Using it" group).
+static func _weapon(id: StringName, display_name: String, icon_color: Color, mesh: Mesh, collision_size: Vector3, stats: Dictionary) -> void:
+	_add(id, display_name, icon_color, mesh, collision_size)
+	var item: ItemData = _items[id]
+	item.max_stack = 1
+	for key in stats:
+		item.set(key, stats[key])
+
+
+## All weapons, for the shop and the HUD.
+static func weapons() -> Array[ItemData]:
+	if _items.is_empty():
+		_build_items()
+	var list: Array[ItemData] = []
+	for item: ItemData in _items.values():
+		if item.use == "gun" or item.use == "melee":
+			list.append(item)
+	return list
 
 
 # --- Story items ------------------------------------------------------------------

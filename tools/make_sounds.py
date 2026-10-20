@@ -310,6 +310,47 @@ def make_fire(rng):
     save("fire_loop", loopable(mix(roar, scale(crackle, 0.9)), 1.5), 0.7)
 
 
+def gunshot(rng, seconds, crack_hz, boom_hz, boom_amount, tail):
+    """A gunshot: a sharp noisy crack, a low boom, and a fading tail (echo)."""
+    n = int(seconds * RATE)
+    crack = apply(bandpass(noise(seconds, rng), crack_hz * 0.4, crack_hz), envelope(n, 0.001, seconds * 0.9, 4.0))
+    boom = apply(tone(sweep(boom_hz, boom_hz * 0.45, seconds), "sine"), envelope(n, 0.001, seconds * 0.95, 2.5))
+    body = mix(crack, scale(boom, boom_amount))
+    if tail > 0:
+        echo = [0.0] * int(tail * RATE)
+        delay = int(0.11 * RATE)
+        for i in range(len(body)):
+            if i + delay < len(echo):
+                echo[i + delay] += body[i] * 0.35
+        body = mix(body, lowpass(echo, 1500.0))
+    return body
+
+
+def make_guns(rng):
+    for i in range(2):
+        save("gun_pistol_%d" % i, gunshot(rng, 0.22, 4200 + i * 300, 160, 0.9, 0.5), 0.85)
+        save("gun_smg_%d" % i, gunshot(rng, 0.11, 4600 + i * 300, 190, 0.5, 0.0), 0.75)
+        save("gun_rifle_%d" % i, gunshot(rng, 0.18, 5200 + i * 300, 140, 0.8, 0.45), 0.85)
+    save("gun_shotgun", gunshot(rng, 0.5, 2600, 90, 1.4, 0.8), 0.9)
+    save("gun_sniper", gunshot(rng, 0.7, 3000, 70, 1.6, 1.4), 0.95)
+    # Flare: a pop and a long rising hiss.
+    n = int(1.3 * RATE)
+    pop = gunshot(rng, 0.12, 2400, 220, 0.6, 0.0)
+    hiss = apply(bandpass(noise(1.3, rng), [1500.0 + 2500.0 * j / n for j in range(n)], 6000.0), envelope(n, 0.05, 0.9, 1.4))
+    save("flare_shot", mix(pop, scale(hiss, 0.5)), 0.8)
+    # Click of an empty gun, and the clack-clack of reloading.
+    n = int(0.06 * RATE)
+    save("dry_fire", apply(bandpass(noise(0.06, rng), 1800.0, 6000.0), envelope(n, 0.001, 0.05, 3.0)), 0.6)
+    clack = silence(0.05)
+    for gap, freq in [(0.25, 1400.0), (0.3, 1000.0)]:
+        n = int(0.07 * RATE)
+        clack += apply(bandpass(noise(0.07, rng), freq * 0.6, freq * 3), envelope(n, 0.001, 0.06, 2.5)) + silence(gap)
+    save("reload", clack, 0.6)
+    # Radar beep.
+    n = int(0.14 * RATE)
+    save("beep", apply(tone(1250.0, "sine", seconds=0.14), envelope(n, 0.005, 0.1, 1.2)), 0.4)
+
+
 def main():
     rng = random.Random(12345)
     make_wind(rng)
@@ -321,6 +362,7 @@ def main():
     make_blips(rng)
     make_munch(rng)
     make_fire(rng)
+    make_guns(rng)
 
 
 if __name__ == "__main__":

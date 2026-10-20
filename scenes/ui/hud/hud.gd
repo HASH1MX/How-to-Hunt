@@ -24,6 +24,8 @@ var player: Node
 var _money: Label
 var _quest_tip: QuestTip
 var _tracker: QuestTracker
+var _ammo: Label
+var _scope: Control
 var _banner: VBoxContainer
 var _banner_tween: Tween
 var _health_ring: StatRing
@@ -102,6 +104,63 @@ func _process(delta: float) -> void:
 				Settings.get_binding_text("slot_4"), Settings.get_binding_text("drop")]
 	else:
 		_hint.text = ""
+	_ammo.text = player.weapons.ammo_text()
+	_ammo.visible = _ammo.text != ""
+	_scope.visible = player.weapons.is_scoped()
+
+
+## The ammo counter (bottom right, above the money) and the sniper scope overlay.
+func _build_weapon_ui() -> void:
+	_ammo = UiStyle.label("", 34)
+	_ammo.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_ammo.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_ammo.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_ammo.offset_right = -26
+	_ammo.offset_bottom = -78
+	_ammo.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(_ammo)
+	# Scope: black all around a round window, with thin cross hairs.
+	_scope = Control.new()
+	_scope.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_scope.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scope.visible = false
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0, 0, 0, 0))
+	gradient.add_point(0.62, Color(0, 0, 0, 0))
+	gradient.add_point(0.66, Color(0, 0, 0, 1))
+	gradient.set_color(gradient.get_point_count() - 1, Color(0, 0, 0, 1))
+	var ring := GradientTexture2D.new()
+	ring.gradient = gradient
+	ring.fill = GradientTexture2D.FILL_RADIAL
+	ring.fill_from = Vector2(0.5, 0.5)
+	ring.fill_to = Vector2(0.5, 0.0)
+	ring.width = 512
+	ring.height = 512
+	var lens := TextureRect.new()
+	lens.texture = ring
+	lens.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	lens.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	lens.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lens.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scope.add_child(lens)
+	for vertical in [false, true]:
+		var line := ColorRect.new()
+		line.color = Color(0, 0, 0, 0.85)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if vertical:
+			line.set_anchors_preset(Control.PRESET_CENTER)
+			line.offset_left = -1
+			line.offset_right = 1
+			line.offset_top = -260
+			line.offset_bottom = 260
+		else:
+			line.set_anchors_preset(Control.PRESET_CENTER)
+			line.offset_left = -260
+			line.offset_right = 260
+			line.offset_top = -1
+			line.offset_bottom = 1
+		_scope.add_child(line)
+	add_child(_scope)
 
 
 ## "New quest" / "Quest complete" message in the top middle.
@@ -182,6 +241,7 @@ func _build() -> void:
 	_quest_tip.position = Vector2(22, 240)
 	add_child(_quest_tip)
 	_build_banner()
+	_build_weapon_ui()
 
 	_build_stats()
 	_build_hotbar()

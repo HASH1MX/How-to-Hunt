@@ -75,6 +75,25 @@ func push_state(position: Vector3, yaw: float, pitch: float, flags: int) -> void
 		visible = true
 
 
+func set_held(item_id: String) -> void:
+	if model != null:
+		model.set_held_item(ItemLibrary.get_item(StringName(item_id)) if item_id != "" and ItemLibrary.has_item(StringName(item_id)) else null)
+
+
+## This player fired: flash at their hand, tracers to where the shots went, and the sound.
+func show_shot(weapon_id: String, ends: Array) -> void:
+	if model == null:
+		return
+	var muzzle := model.get_hand_position()
+	var parent := get_parent()
+	WeaponEffects.muzzle_flash(parent, muzzle)
+	for to in ends:
+		WeaponEffects.tracer(parent, muzzle, to)
+	model.play_punch()
+	if ItemLibrary.has_item(StringName(weapon_id)):
+		Sfx.play_at(ItemLibrary.get_item(StringName(weapon_id)).sound, muzzle, 2.0, 0.05, 150.0)
+
+
 func punch() -> void:
 	if model != null:
 		model.play_punch()

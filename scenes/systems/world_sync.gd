@@ -212,8 +212,8 @@ func request_push(id: int, impulse: Vector3) -> void:
 	_request_push.rpc_id(1, id, impulse)
 
 
-func request_animal_hit(id: int, amount: float, at: Vector3) -> void:
-	_request_animal_hit.rpc_id(1, id, amount, at)
+func request_animal_hit(id: int, amount: float, at: Vector3, weapon_id: String = "") -> void:
+	_request_animal_hit.rpc_id(1, id, amount, at, weapon_id)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -261,20 +261,24 @@ func _request_push(id: int, impulse: Vector3) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_animal_hit(id: int, amount: float, at: Vector3) -> void:
+func _request_animal_hit(id: int, amount: float, at: Vector3, weapon_id: String) -> void:
 	var animal: Animal = _animals.get(id)
 	var sender := multiplayer.get_remote_sender_id()
 	var remote := Network.get_remote_player(sender)
 	if animal == null or remote == null or animal.state == Animal.State.DEAD:
 		return
-	if remote.global_position.distance_to(animal.global_position) > REACH:
+	# What it was hit with decides how far away it can be, how hard, and how often.
+	var weapon: ItemData = ItemLibrary.get_item(StringName(weapon_id)) if weapon_id != "" and ItemLibrary.has_item(StringName(weapon_id)) else null
+	var reach := weapon.reach + 3.0 if weapon != null else REACH
+	var max_damage := weapon.damage * weapon.pellets if weapon != null else MAX_PUNCH_DAMAGE
+	var min_gap := weapon.fire_gap * 0.6 if weapon != null else 0.06
+	if remote.global_position.distance_to(animal.global_position) > reach:
 		return
-	# Punches can't come faster than the game allows.
 	var now := Time.get_ticks_msec() / 1000.0
-	if now - float(_last_hit_time.get(sender, -1.0)) < 0.06:
+	if now - float(_last_hit_time.get(sender, -1.0)) < min_gap:
 		return
 	_last_hit_time[sender] = now
-	animal.take_hit(clampf(amount, 0.0, MAX_PUNCH_DAMAGE), remote, at)
+	animal.take_hit(clampf(amount, 0.0, max_damage), remote, at)
 
 
 ## The sender's character, if it is within `reach` of `position`.

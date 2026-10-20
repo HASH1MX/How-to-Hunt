@@ -42,6 +42,9 @@ const SCRAP_SPOTS := {
 }
 ## Where the campfire is built, next to Gus.
 const CAMPFIRE_AT := Vector2(-6.4, -0.3)
+## The plane's radar (pulled out next to the seats) and the emergency case (by the cockpit).
+const RADAR_AT := Vector3(-0.4, 0.0, -3.4)
+const CASE_AT := Vector3(6.6, 0.0, -9.6)
 
 
 func _scatter_sticks(world_sync: WorldSync) -> void:
@@ -66,6 +69,15 @@ func _scatter_sticks(world_sync: WorldSync) -> void:
 		if item != null:
 			item.rotation.y = rng.randf() * TAU
 		placed += 1
+
+
+## Loose items aren't saved, so if the case was opened but the flare not fired yet, a flare
+## gun waits in the case again.
+func _replace_flare_gun(case: Node3D) -> void:
+	if Network.is_online() and not Network.is_host():
+		return
+	if Quests.is_active("signal_for_help") and Quests.get_progress("signal_for_help", 0) > 0 and Quests.get_progress("signal_for_help", 1) == 0:
+		WorldSync.spawn_item(self, ItemLibrary.get_item(&"flare_gun"), case.global_position + Vector3(0, 0.5, 0), Vector3.ZERO)
 
 
 ## The three radar parts, each with a beam of light, unless they were already handed over.
@@ -133,12 +145,23 @@ func start_game() -> void:
 	campfire.name = "Campfire"
 	add_child(campfire)
 	campfire.position = Vector3(CAMPFIRE_AT.x, $Terrain.get_height(CAMPFIRE_AT.x, CAMPFIRE_AT.y), CAMPFIRE_AT.y)
+	var radar := RadarConsole.new()
+	radar.name = "Radar"
+	add_child(radar)
+	radar.position = Vector3(RADAR_AT.x, $Terrain.get_height(RADAR_AT.x, RADAR_AT.z) - 0.05, RADAR_AT.z)
+	radar.rotation.y = 0.6
+	var case := FlareCase.new()
+	case.name = "EmergencyCase"
+	add_child(case)
+	case.position = Vector3(CASE_AT.x, $Terrain.get_height(CASE_AT.x, CASE_AT.z) - 0.04, CASE_AT.z)
+	case.rotation = Vector3(0.0, 1.2, 0.08)
 	# The story's quests (a joined player gets them from the host).
 	WorldSync.reset_shaken()
 	Quests.begin_session()
 	_place_quest_items(world_sync)
 	_scatter_sticks(world_sync)
 	_place_scrap()
+	_replace_flare_gun(case)
 	var player := PLAYER_SCENE.instantiate()
 	player.name = "LocalPlayer"
 	# Set the position before adding, so the player remembers it as its respawn point.

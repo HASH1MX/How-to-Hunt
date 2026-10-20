@@ -92,6 +92,10 @@ var _swing := 0.0
 var _sit_amount := 0.0
 var _splint: Node3D
 var _crutch: MeshInstance3D
+## In the right hand (other players' weapons and tools).
+var _hand_anchor: Node3D
+## "" or "pistol"/"rifle": arms held up and forward, aiming.
+var aim_pose := ""
 var _crouch_amount := 0.0
 var _air_amount := 0.0
 var _punch_time := -1.0
@@ -208,6 +212,10 @@ func _build_arms() -> void:
 			_add(st, _cylinder(0.04, 0.046, ARM_LENGTH, 8), Vector3(0, -ARM_LENGTH * 0.5, 0), sleeve_color)
 		_add_mitten(st, Vector3(0, -ARM_LENGTH - 0.045, 0), side)
 		shoulder.add_child(_mesh(st))
+		if side > 0:
+			_hand_anchor = Node3D.new()
+			_hand_anchor.position = Vector3(0, -ARM_LENGTH - 0.06, -0.01)
+			shoulder.add_child(_hand_anchor)
 		_shoulders.append(shoulder)
 
 
@@ -279,6 +287,27 @@ func _tube(st: SurfaceTool, a: Vector3, b: Vector3, ra: float, rb: float, color:
 
 
 # --- Posing and animation -------------------------------------------------------
+
+## Puts an item in the right hand (null = empty). Guns are held up, aiming forward.
+func set_held_item(item: ItemData) -> void:
+	if _hand_anchor == null:
+		return
+	for child in _hand_anchor.get_children():
+		child.queue_free()
+	aim_pose = item.hold if item != null else ""
+	if item == null:
+		return
+	var model := MeshInstance3D.new()
+	model.mesh = item.mesh
+	# Item meshes point along -Z; the arm points along -Y.
+	model.rotation.x = -PI * 0.5
+	_hand_anchor.add_child(model)
+
+
+## Where the right hand is (world position), e.g. for a muzzle flash.
+func get_hand_position() -> Vector3:
+	return _hand_anchor.global_position if _hand_anchor != null else global_position + Vector3(0, 1.3, 0)
+
 
 ## Sets sitting with no animation (the starting pose when the world loads).
 func set_sitting_instantly(value: bool) -> void:
@@ -425,6 +454,14 @@ func _animate_arms() -> void:
 		shoulder.rotation = shoulder.rotation.lerp(Vector3(0.75, 0, -0.12 * side), seat)
 		if _punch_time >= 0.0 and i == _punch_arm:
 			shoulder.rotation.x += 1.6 * sin(_punch_time / PUNCH_DURATION * PI)
+	# Aiming a gun: arms up and forward, following where the player looks.
+	if aim_pose != "":
+		var up := clampf(remote_pitch, -0.8, 0.8)
+		_shoulders[1].rotation = Vector3(PI * 0.5 + up, 0.0, 0.12)
+		if aim_pose == "rifle":
+			_shoulders[0].rotation = Vector3(PI * 0.5 + up - 0.1, 0.0, -0.5)
+		if _punch_time >= 0.0:
+			_shoulders[1].rotation.x += 0.12
 	# Talking: the right arm comes up and waves around while explaining.
 	var wave := _talk_amount * (1.0 + sin(_time * 3.5) * 0.25)
 	_shoulders[1].rotation.x += wave * 0.9

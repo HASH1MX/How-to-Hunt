@@ -31,8 +31,28 @@ const WIND_UP := 0.05
 const JAB := 0.06
 const RETURN := 0.17
 
+## How guns are held: where the gun's grip sits (camera space) normally and when aiming,
+## and where the left hand supports it (in the gun's own space).
+const GUN_POSES := {
+	"pistol": {rest = Vector3(0.2, -0.2, -0.5), aim = Vector3(0.0, -0.105, -0.4), left = Vector3(-0.035, -0.04, 0.02)},
+	"knife": {rest = Vector3(0.24, -0.25, -0.48), aim = Vector3(0.24, -0.25, -0.48), left = Vector3.ZERO},
+	"rifle": {rest = Vector3(0.18, -0.22, -0.42), aim = Vector3(0.0, -0.125, -0.3), left = Vector3(-0.01, -0.035, -0.3)},
+}
+
 ## Where held items go: inside the right fist.
 var held_item_anchor: Node3D
+## Where guns go: in front of the camera, with the hands placed around it.
+var gun_anchor: Node3D
+## "" (fists, or an item in the fist), "pistol" or "rifle" (see GUN_POSES).
+var hold_pose := ""
+var aiming := false
+var reloading := false
+var _aim_amount := 0.0
+var _reload_amount := 0.0
+var _kick := 0.0
+var _kick_velocity := 0.0
+var _muzzle_z := -0.2
+var _punch_amount := [0.0, 0.0]
 ## Set by the player each frame, used for bobbing.
 var move_speed := 0.0
 var on_floor := true
@@ -66,6 +86,9 @@ func _ready() -> void:
 	held_item_anchor.position = Vector3(0.0, -0.005, -0.155)
 	held_item_anchor.rotation = Vector3(0.9, 0.0, 0.0)
 	_arms[1].add_child(held_item_anchor)
+	gun_anchor = Node3D.new()
+	gun_anchor.name = "Gun"
+	add_child(gun_anchor)
 
 
 ## Starts a punch with the next arm, then waits at least gap seconds before the next.
@@ -80,6 +103,36 @@ func punch(gap: float = -1.0) -> bool:
 	_cooldown = gap if gap >= 0.0 else punch_cooldown
 	punch_started.emit()
 	return true
+
+
+## Like punch(), but always with the given arm (0 = left, 1 = right), for the knife.
+func punch_with(arm: int, gap: float) -> bool:
+	if _cooldown > 0.0:
+		return false
+	_punch_time[arm] = 0.0
+	_punch_hit_sent[arm] = false
+	_cooldown = gap
+	punch_started.emit()
+	return true
+
+
+## A gun was fired: the arms and gun jump back and up, then spring back.
+func kick(amount: float) -> void:
+	_kick_velocity += amount * 9.0
+
+
+## Holds a gun the way `pose` says ("" = back to fists). `gun_length` is how far the
+## muzzle is in front of the grip.
+func set_hold_pose(pose: String, gun_length: float = 0.2) -> void:
+	hold_pose = pose if GUN_POSES.has(pose) else ""
+	_muzzle_z = -gun_length
+
+
+## Where bullets and tracers come out (world position).
+func get_muzzle_position() -> Vector3:
+	if hold_pose == "":
+		return get_parent().global_transform * Vector3(0.12, -0.12, -0.6)
+	return gun_anchor.global_transform * Vector3(0, 0.05, _muzzle_z)
 
 
 ## Mouse movement, used for the arms lagging behind when looking around.
@@ -124,6 +177,7 @@ func _process(delta: float) -> void:
 		rotation_now += Vector3(-_sway.y, -_sway.x, 0)
 
 		var punch_amount := _update_punch(i, delta)
+		_punch_amount[i] = punch_amount
 		if punch_amount != 0.0:
 			position_now = position_now.lerp(PUNCH_POSITION[i], punch_amount) if punch_amount > 0.0 \
 					else position_now + Vector3(0.02 * side, -0.02, 0.08) * -punch_amount
@@ -131,6 +185,44 @@ func _process(delta: float) -> void:
 		_arms[i].position = position_now
 		_arms[i].rotation = rotation_now
 		_arms[i].scale = Vector3.ONE * ARM_SCALE
+	_update_gun(delta)
+
+
+## With a gun: place the gun in front of the camera (moving to the middle when aiming,
+## down while reloading, kicking back when fired) and put both hands on it.
+func _update_gun(delta: float) -> void:
+	_kick_velocity += (-_kick * 160.0 - _kick_velocity * 16.0) * delta
+	_kick += _kick_velocity * delta
+	_aim_amount = move_toward(_aim_amount, 1.0 if aiming else 0.0, delta * 6.0)
+	_reload_amount = move_toward(_reload_amount, 1.0 if reloading else 0.0, delta * 5.0)
+	gun_anchor.visible = hold_pose != ""
+	if hold_pose == "":
+		return
+	var pose: Dictionary = GUN_POSES[hold_pose]
+	var bob := Vector3(cos(_bob_phase) * 0.008, -absf(sin(_bob_phase)) * 0.012, 0.0) * _bob_amount * (1.0 - _aim_amount * 0.8)
+	var grip: Vector3 = pose.rest.lerp(pose.aim, _aim_amount) + bob + Vector3(0, _dip * 0.08 - _reload_amount * 0.12, 0)
+	grip += Vector3(-_sway.x * 0.15, _sway.y * 0.15, 0) * (1.0 - _aim_amount)
+	grip += Vector3(0, _kick * 0.012, _kick * 0.05)
+	var tilt := 0.0
+	if hold_pose == "knife":
+		# Stab forward and a little inward when "punching" with the knife.
+		var stab := maxf(_punch_amount[1], 0.0)
+		grip += Vector3(-0.1, 0.07, -0.2) * stab
+		tilt = 0.35 - stab * 0.3
+	gun_anchor.position = grip
+	gun_anchor.rotation = Vector3(tilt + _kick * 0.12 - _reload_amount * 0.7 - _sway.y * 0.5, -_sway.x * 0.5, _reload_amount * 0.35)
+	# Hands: the right fist on the grip, the left one supporting the gun.
+	var gun_xform := gun_anchor.transform
+	_place_fist(1, gun_xform * Vector3(0.0, -0.035, 0.025), gun_anchor.rotation + Vector3(0.05, 0.35, -1.45))
+	if hold_pose != "knife":
+		_place_fist(0, gun_xform * (pose.left as Vector3), gun_anchor.rotation + Vector3(0.25, -0.6, 1.35))
+
+
+## Puts an arm so that its fist ends up at `fist_at` (camera space).
+func _place_fist(i: int, fist_at: Vector3, rot: Vector3) -> void:
+	var basis := Basis.from_euler(rot)
+	_arms[i].rotation = rot
+	_arms[i].position = fist_at - basis * Vector3(0, 0, -0.13 * ARM_SCALE)
 
 
 ## Advances one arm's punch and returns how far out it is:

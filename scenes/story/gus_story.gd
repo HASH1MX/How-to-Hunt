@@ -70,12 +70,36 @@ static func talk_lines() -> PackedStringArray:
 			"There's a deer out there somewhere. A big one. Deer are shy and fast, and eight punches' worth of tough. Sneak up on it. Crouch!",
 			"Bring it to me and drop it at my face. I'll cook, I mean eat, it. Don't tell it I said that.",
 		])
-	if Quests.is_done("big_game"):
+	if Quests.is_active("signal_for_help"):
 		return PackedStringArray([
-			"That was the best meal of my life. The radar is humming, and I think I see another island on the screen!",
-			"More jobs soon, kid. We're getting closer to getting off this rock.",
+			"That was the best meal of my life. And look at the radar: another island, to the east! Where there's an island, there's a rescue station.",
+			"We need to signal them. The plane's emergency case by the cockpit has a flare gun, but it's locked. Here, this is the key.",
+			"Open the case, then climb the tallest mountain you can find and fire the flare from the top. Down here among the trees nobody would see it.",
+		])
+	if Quests.is_done("signal_for_help"):
+		return PackedStringArray([
+			"Did you see that? Beautiful! Now we wait. Someone must have seen it...",
 		])
 	return PackedStringArray(["Drop what you hunt right in front of my face. I'll pay for it!"])
+
+
+## Things Gus hands over when you talk to him (each player gets their own):
+## his old knife once his leg is fixed, his pistol after the deer feast, and the case key
+## while you need it. Returns what he says about it.
+static func give_gifts(player: Node) -> PackedStringArray:
+	var lines: Array[String] = []
+	var inventory: Inventory = player.inventory
+	if Quests.is_done("patch_me_up") and not inventory.has_item(&"knife"):
+		inventory.pick_up(ItemLibrary.get_item(&"knife"))
+		lines.append("Oh, before I forget: take my old knife. It cuts better than your knuckles do.")
+	if Quests.is_done("big_game") and not inventory.has_item(&"pistol"):
+		inventory.pick_up(ItemLibrary.get_item(&"pistol"))
+		player.weapons.add_ammo("pistol", 24)
+		lines.append("And here's my old pistol, with a few bullets. Aim, right click. Reload, R. Don't shoot me.")
+	if Quests.is_active("signal_for_help") and Quests.get_progress("signal_for_help", 0) == 0 and not inventory.has_item(&"case_key"):
+		inventory.pick_up(ItemLibrary.get_item(&"case_key"))
+		lines.append("Here's the key to the emergency case. Don't lose it, it's the only one. Well, I'd make you another one somehow.")
+	return PackedStringArray(lines)
 
 
 ## The active quest that is waiting for `item_id` to be handed over, or "".

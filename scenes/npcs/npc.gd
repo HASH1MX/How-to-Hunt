@@ -172,6 +172,10 @@ func interact(player: Node) -> void:
 	var lines := first_lines if first_time or repeat_lines.is_empty() else repeat_lines
 	if story == "gus":
 		lines = GusStory.talk_lines()
+		var gifts := GusStory.give_gifts(player)
+		if not gifts.is_empty():
+			lines.append_array(gifts)
+			Sfx.play("pickup", -4.0, 0.05)
 	has_talked = true
 	model.talking = true
 	player.start_dialogue(display_name, lines, _on_dialogue_finished.bind(first_time))

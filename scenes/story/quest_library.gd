@@ -77,6 +77,15 @@ static func defs() -> Dictionary:
 				{type = "feed", item = "deer", npc = "gus", count = 1, text = "Feed Gus a deer"},
 			],
 			reward = 100,
+			next = ["signal_for_help"],
+		},
+		"signal_for_help": {
+			title = "Signal for Help",
+			objectives = [
+				{type = "flag", flag = "case_opened", count = 1, text = "Open the emergency case by the cockpit (Gus has the key)"},
+				{type = "flag", flag = "flare_fired", count = 1, text = "Fire the flare gun from a mountain top"},
+			],
+			reward = 50,
 			next = [],
 		},
 	}

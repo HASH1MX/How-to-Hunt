@@ -26,7 +26,7 @@ signal upnp_finished
 const DEFAULT_PORT := 7777
 const MAX_PLAYERS := 10
 ## Bump this when a change makes old and new versions unable to play together.
-const PROTOCOL_VERSION := 8
+const PROTOCOL_VERSION := 10
 const SEND_RATE := 20.0
 const MAIN_MENU := "res://scenes/ui/main_menu/main_menu.tscn"
 const SAVE_PATH := "user://multiplayer.cfg"
@@ -281,6 +281,44 @@ func _progress(progress: Dictionary) -> void:
 	var key: String = _keys.get(multiplayer.get_remote_sender_id(), "")
 	if key != "" and multiplayer.is_server():
 		SaveManager.set_player_data(key, progress)
+
+
+## The item in this player's hands changed (others see it in their hand).
+func send_held(item_id: String) -> void:
+	if is_online() and players.size() > 1:
+		_held.rpc(item_id)
+
+
+## This player fired a gun: others see the flash and tracers and hear it.
+func send_shot(weapon_id: String, from: Vector3, ends: Array[Vector3]) -> void:
+	if is_online() and players.size() > 1:
+		_shot.rpc(weapon_id, from, ends)
+
+
+func send_flare(from: Vector3, direction: Vector3) -> void:
+	if is_online() and players.size() > 1:
+		_flare.rpc(from, direction)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _held(item_id: String) -> void:
+	var remote: RemotePlayer = _remotes.get(multiplayer.get_remote_sender_id())
+	if remote != null:
+		remote.set_held(item_id)
+
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func _shot(weapon_id: String, from: Vector3, ends: Array) -> void:
+	var remote: RemotePlayer = _remotes.get(multiplayer.get_remote_sender_id())
+	if remote != null:
+		remote.show_shot(weapon_id, ends)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _flare(from: Vector3, direction: Vector3) -> void:
+	if _world != null:
+		FlareShot.fire(_world, from, direction)
+		Sfx.play_at("flare_shot", from, 0.0, 0.05, 120.0)
 
 
 func send_punch() -> void:

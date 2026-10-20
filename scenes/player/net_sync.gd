@@ -11,6 +11,14 @@ var _timer := 0.0
 func _ready() -> void:
 	if player.view_model != null:
 		player.view_model.punch_hit.connect(Network.send_punch)
+	player.held_changed.connect(Network.send_held)
+	# Tell everyone what we're already holding.
+	var item: ItemData = player.inventory.get_active_item()
+	Network.send_held.call_deferred(String(item.id) if item != null else "")
+	# Someone new arrived: tell them too.
+	Network.player_joined.connect(func(_id, _name):
+		var now: ItemData = player.inventory.get_active_item()
+		Network.send_held(String(now.id) if now != null else ""))
 
 
 func _physics_process(delta: float) -> void:

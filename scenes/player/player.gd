@@ -28,6 +28,8 @@ signal money_changed(amount: int)
 signal jumped
 signal landed(speed: float)
 signal punch_connected(hit_creature: bool, at: Vector3)
+## The item in the player's hands changed (id, or "" for empty hands). Sent to other players.
+signal held_changed(item_id: String)
 signal died
 ## Asks the HUD to show a conversation. The HUD calls on_finished when it closes.
 signal dialogue_requested(speaker: String, lines: PackedStringArray, on_finished: Callable)
@@ -106,6 +108,8 @@ signal dialogue_requested(speaker: String, lines: PackedStringArray, on_finished
 @onready var inventory: Inventory = $Inventory
 @onready var body_shape: CollisionShape3D = $CollisionShape3D
 @onready var body_mesh: MeshInstance3D = $Body
+## Knife, guns and the flare gun (see WeaponHandler).
+var weapons: WeaponHandler
 
 ## Height of the water surface. Set by the level; -INF means there is no water.
 var water_level: float = -INF
@@ -151,6 +155,10 @@ func _ready() -> void:
 	inventory.changed.connect(_update_held_item)
 	inventory.item_dropped.connect(_on_item_dropped)
 	view_model.punch_hit.connect(_on_punch_hit)
+	weapons = WeaponHandler.new()
+	weapons.name = "Weapons"
+	weapons.player = self
+	add_child(weapons)
 	_reset_stats()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -165,7 +173,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return # The pause menu is open.
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Left/right turns the whole player, up/down tilts only the head.
-		var turn := Settings.get_mouse_turn_speed()
+		# Slower turning while zoomed in, so aiming stays steady.
+		var turn := Settings.get_mouse_turn_speed() * clampf(camera.fov / maxf(_base_fov, 1.0), 0.15, 1.0)
 		var vertical := -1.0 if Settings.invert_mouse_y else 1.0
 		rotate_y(-event.relative.x * turn)
 		head.rotate_x(-event.relative.y * turn * vertical)
@@ -182,6 +191,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			target.interact(self)
 	elif event.is_action_pressed("drop"):
 		inventory.drop_active_item()
+	elif event.is_action_pressed("reload"):
+		weapons.start_reload()
 	else:
 		for i in Inventory.SLOT_COUNT:
 			if event.is_action_pressed("slot_%d" % (i + 1)):
@@ -201,6 +212,8 @@ func _physics_process(delta: float) -> void:
 	update_attack(delta, can_act and mouse_ready and Input.is_action_just_pressed("attack"),
 			can_act and mouse_ready and Input.is_action_pressed("attack"))
 	_update_crouch(delta, can_act and Input.is_action_pressed("crouch"))
+	weapons.set_aiming(can_act and mouse_ready and Input.is_action_pressed("aim"))
+	view_model.visible = not weapons.is_scoped()
 
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	var wants_sprint := Input.is_action_pressed("sprint") and input_dir.y < -0.1
@@ -224,7 +237,9 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0.0, speed)
 
 	var target_fov := _base_fov + (sprint_fov_boost if sprinting else 0.0)
-	camera.fov = lerpf(camera.fov, target_fov, 8.0 * delta)
+	if weapons.aiming:
+		target_fov = weapons.get_fov(_base_fov)
+	camera.fov = lerpf(camera.fov, target_fov, (14.0 if weapons.aiming else 8.0) * delta)
 
 	var was_on_floor := is_on_floor()
 	var landing_speed := -velocity.y
@@ -295,6 +310,11 @@ func _move_without_wall_climbing() -> void:
 ## click that comes slightly too early is saved and used right after). Holding the
 ## button for a moment starts punching automatically at a slower pace.
 func update_attack(delta: float, clicked: bool, held: bool) -> void:
+	# Holding a knife, a gun or the flare gun: that is used instead of punching.
+	var item := inventory.get_active_item()
+	if item != null and item.use != "":
+		weapons.handle(item, clicked, held)
+		return
 	_punch_buffer = maxf(_punch_buffer - delta, 0.0)
 	_attack_held_time = _attack_held_time + delta if held else 0.0
 	if clicked:
@@ -386,6 +406,7 @@ func to_save_data() -> Dictionary:
 		food = food,
 		money = money,
 		inventory = inventory.to_dict(),
+		ammo = weapons.to_dict(),
 	}
 
 
@@ -403,6 +424,7 @@ func load_save_data(saved: Dictionary) -> void:
 	food = clampf(float(saved.get("food", max_food)), 0.0, max_food)
 	money = int(saved.get("money", 0))
 	inventory.from_dict(saved.get("inventory", {}))
+	weapons.from_dict(saved.get("ammo", {}))
 	health_changed.emit(health, max_health)
 	food_changed.emit(food, max_food)
 	money_changed.emit(money)
@@ -472,7 +494,11 @@ func start_dialogue(speaker: String, lines: PackedStringArray, on_finished: Call
 func _on_punch_hit() -> void:
 	var from := camera.global_position
 	var forward := -camera.global_transform.basis.z
-	var query := PhysicsRayQueryParameters3D.create(from, from + forward * punch_reach)
+	# A knife hits harder and reaches a little further than a fist.
+	var held := inventory.get_active_item()
+	var knife := held if held != null and held.use == "melee" else null
+	var reach := knife.reach if knife != null else punch_reach
+	var query := PhysicsRayQueryParameters3D.create(from, from + forward * reach)
 	query.exclude = [get_rid()]
 	query.collision_mask = 0xFFFFFFFF
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
@@ -484,7 +510,7 @@ func _on_punch_hit() -> void:
 		WorldSync.shake_tree(self, hit.position)
 	if target.has_method("take_hit"):
 		# Animals (later) will have take_hit and lose health.
-		target.take_hit(punch_damage, self, hit.position)
+		target.take_hit(knife.damage if knife != null else punch_damage, self, hit.position, String(knife.id) if knife != null else "")
 	elif target is WorldItem and target.net_id >= 0 and Network.is_online() and not Network.is_host():
 		# A shared item belongs to the host: ask it to knock the item.
 		var sync := WorldSync.find(self)
@@ -497,18 +523,26 @@ func _on_punch_hit() -> void:
 
 ## Shows the active item in the right hand.
 func _update_held_item() -> void:
-	var anchor := view_model.held_item_anchor
-	for child in anchor.get_children():
-		child.queue_free()
+	for anchor in [view_model.held_item_anchor, view_model.gun_anchor]:
+		for child in anchor.get_children():
+			child.queue_free()
 	var item := inventory.get_active_item()
+	held_changed.emit(String(item.id) if item != null else "")
 	if item == null:
+		view_model.set_hold_pose("")
 		return
 	var model := MeshInstance3D.new()
 	model.mesh = item.mesh
 	model.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if item.hold != "":
+		# Guns are held in both hands in front of the camera.
+		view_model.set_hold_pose(item.hold, -item.mesh.get_aabb().position.z)
+		view_model.gun_anchor.add_child(model)
+		return
+	view_model.set_hold_pose("")
 	# Long items (like a stick) stick out forward from the fist.
 	model.position.z = -item.mesh.get_aabb().size.z * 0.3
-	anchor.add_child(model)
+	view_model.held_item_anchor.add_child(model)
 
 
 ## Throws the dropped item a little in front of the player, from chest height
