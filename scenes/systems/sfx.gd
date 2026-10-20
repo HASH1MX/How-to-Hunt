@@ -71,6 +71,11 @@ const GROUPS := {
 	"dry_fire": [SYNTH, "dry_fire.wav", 1],
 	"reload": [SYNTH, "reload.wav", 1],
 	"beep": [SYNTH, "beep.wav", 1],
+	"growl": [SYNTH, "growl.wav", 1],
+	"roar": [SYNTH, "roar.wav", 1],
+	"rotor_loop": [SYNTH, "rotor_loop.wav", 1],
+	"engine_fail": [SYNTH, "engine_fail.wav", 1],
+	"big_splash": [SYNTH, "big_splash.wav", 1],
 	"wind_loop": [SYNTH, "wind_loop.wav", 1],
 	"waves_loop": [SYNTH, "waves_loop.wav", 1],
 }

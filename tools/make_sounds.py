@@ -351,6 +351,36 @@ def make_guns(rng):
     save("beep", apply(tone(1250.0, "sine", seconds=0.14), envelope(n, 0.005, 0.1, 1.2)), 0.4)
 
 
+def make_jungle_and_heli(rng):
+    # A jaguar's low growl and a roar.
+    n = int(0.9 * RATE)
+    rumble = tone(sweep(95, 70, 0.9), "saw", vibrato=0.08, vibrato_rate=23)
+    save("growl", apply(mix(lowpass(rumble, 500.0), scale(bandpass(noise(0.9, rng), 150.0, 900.0), 0.5)), envelope(n, 0.1, 0.5, 1.2)), 0.8)
+    n = int(1.1 * RATE)
+    roar = tone(sweep(180, 110, 1.1, 0.6), "saw", vibrato=0.06, vibrato_rate=19)
+    save("roar", apply(mix(bandpass(roar, 120.0, 1600.0), scale(bandpass(noise(1.1, rng), 300.0, 2500.0), 0.6)), envelope(n, 0.05, 0.7, 1.3)), 0.9)
+    # Helicopter rotor: a thudding beat of filtered noise (loops).
+    seconds = 6.0
+    n = int(seconds * RATE)
+    whoosh = lowpass(noise(seconds, rng), 700.0)
+    beat = [0.25 + 0.75 * (0.5 + 0.5 * math.cos(2 * math.pi * 11.0 * i / RATE)) ** 6 for i in range(n)]
+    engine = scale(tone(110.0, "saw", seconds=seconds), 0.12)
+    save("rotor_loop", loopable(mix(apply(whoosh, beat), lowpass(engine, 400.0)), 0.5), 0.8)
+    # Engine sputtering and failing: coughs, then a dying whine.
+    track = silence(0.05)
+    for k in range(5):
+        n = int(0.12 * RATE)
+        track += apply(lowpass(noise(0.12, rng), 600.0), envelope(n, 0.005, 0.1, 2.0)) + silence(rng.uniform(0.1, 0.25))
+    n = int(1.6 * RATE)
+    track += apply(tone(sweep(620, 120, 1.6), "saw"), envelope(n, 0.05, 1.2, 1.5))
+    save("engine_fail", lowpass(track, 2500.0), 0.8)
+    # A big splash into the sea.
+    n = int(2.2 * RATE)
+    body = apply(lowpass(noise(2.2, rng), 900.0), envelope(n, 0.01, 2.0, 2.2))
+    spray = apply(highpass(noise(1.2, rng), 2000.0), envelope(int(1.2 * RATE), 0.005, 1.1, 2.0))
+    save("big_splash", mix(body, scale(spray, 0.5)), 0.9)
+
+
 def main():
     rng = random.Random(12345)
     make_wind(rng)
@@ -363,6 +393,7 @@ def main():
     make_munch(rng)
     make_fire(rng)
     make_guns(rng)
+    make_jungle_and_heli(rng)
 
 
 if __name__ == "__main__":

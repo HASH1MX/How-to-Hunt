@@ -8,6 +8,7 @@ class_name QuestLibrary
 ##                       "give"  - hand items to an NPC    (key: item, with count)
 ##                       "feed"  - NPC eats animal bodies  (key: item, with count)
 ##                       "flag"  - ticked by a script event (key: flag)
+##                       "sell"  - dropped in the trader's crate (key: item; "any" = anything)
 ##                 text  what the tracker says
 ##   reward      - money paid to every player when it is done
 ##   next        - quests that start when this one is finished
@@ -86,6 +87,47 @@ static func defs() -> Dictionary:
 				{type = "flag", flag = "flare_fired", count = 1, text = "Fire the flare gun from a mountain top"},
 			],
 			reward = 50,
+			next = ["rescue"],
+		},
+		"rescue": {
+			title = "Rescue!",
+			objectives = [
+				{type = "flag", flag = "boarded", count = 1, text = "Board the rescue helicopter"},
+			],
+			reward = 0,
+			next = ["washed_ashore"],
+		},
+		# --- Island 2: the Jungle (see NinaStory) ---
+		"washed_ashore": {
+			title = "Washed Ashore",
+			objectives = [
+				{type = "talk", npc = "nina", count = 1, text = "Talk to the woman on the beach"},
+			],
+			reward = 0,
+			next = ["gus_memorial"],
+		},
+		"gus_memorial": {
+			title = "Gus's Memorial",
+			objectives = [
+				{type = "give", item = "gus_hat", npc = "nina", count = 1, text = "Find Captain Gus's cap on the beach and bring it to Nina"},
+			],
+			reward = 50,
+			next = ["jungle_trade"],
+		},
+		"jungle_trade": {
+			title = "Supplies",
+			objectives = [
+				{type = "sell", item = "any", count = 3, text = "Sell 3 animals in Tomas's crate"},
+			],
+			reward = 80,
+			next = ["apex_predator"],
+		},
+		"apex_predator": {
+			title = "Apex Predator",
+			objectives = [
+				{type = "sell", item = "jaguar", count = 1, text = "Hunt the jaguar and sell it to Tomas"},
+			],
+			reward = 300,
 			next = [],
 		},
 	}

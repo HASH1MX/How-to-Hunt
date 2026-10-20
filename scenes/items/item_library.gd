@@ -67,6 +67,19 @@ static func _build_items() -> void:
 	_add(&"squirrel", "Squirrel", Color(0.7, 0.4, 0.18), _carcass_mesh(&"squirrel"), Vector3(0.3, 0.15, 0.55), 14)
 	_add(&"rabbit", "Rabbit", Color(0.6, 0.5, 0.4), _carcass_mesh(&"rabbit"), Vector3(0.3, 0.2, 0.5), 18)
 	_add(&"deer", "Deer", Color(0.58, 0.4, 0.25), _carcass_mesh(&"deer"), Vector3(0.7, 0.3, 1.0), 60)
+	# Island 2 (the jungle), priced the same way:
+	#   toucan   15 hp, slow, runs from 4 m                         -> $12
+	#   monkey   40 hp, fast, runs from 7 m                         -> $25
+	#   boar    120 hp, charges back and bites when hit             -> $45
+	#   jaguar  200 hp, hunts you on sight, fast, hits hard        -> $150
+	_add(&"toucan", "Toucan", Color(0.98, 0.55, 0.12), _carcass_mesh(&"toucan"), Vector3(0.3, 0.18, 0.4), 12)
+	_add(&"monkey", "Monkey", Color(0.42, 0.28, 0.17), _carcass_mesh(&"monkey"), Vector3(0.35, 0.18, 0.55), 25)
+	_add(&"boar", "Boar", Color(0.32, 0.25, 0.22), _carcass_mesh(&"boar"), Vector3(0.6, 0.35, 0.95), 45)
+	_add(&"jaguar", "Jaguar", Color(0.88, 0.62, 0.22), _carcass_mesh(&"jaguar"), Vector3(0.6, 0.3, 1.2), 150)
+	# Captain Gus's cap, washed up on Island 2's beach.
+	_add(&"gus_hat", "Captain Gus's Cap", Color(0.95, 0.95, 0.93), _cap_mesh(), Vector3(0.32, 0.14, 0.32))
+	_items[&"gus_hat"].glows = true
+	_items[&"gus_hat"].max_stack = 1
 
 
 static func _add(id: StringName, display_name: String, icon_color: Color, mesh: Mesh, collision_size: Vector3, value: int = 0) -> void:
@@ -272,7 +285,75 @@ static func _carcass_mesh(kind: StringName) -> Mesh:
 					LowPoly.add_tube(st, Vector3(0.15 * side, 0.2, z) * k, Vector3(0.38 * side, 0.18, z * 1.05) * k, 0.07 * k, 0.04 * k, fur)
 					LowPoly.add_tube(st, Vector3(0.38 * side, 0.18, z * 1.05) * k, Vector3(0.5 * side, 0.14, z * 1.1) * k, 0.04 * k, 0.028 * k, fur.darkened(0.08))
 					LowPoly.add_blob(st, Vector3(0.52 * side, 0.14, z * 1.1) * k, Vector3(0.03, 0.03, 0.045) * k, Color(0.15, 0.12, 0.1))
+		&"toucan":
+			LowPoly.add_blob(st, Vector3(0, 0.09, 0), Vector3(0.11, 0.08, 0.14), Color(0.08, 0.08, 0.1))
+			LowPoly.add_blob(st, Vector3(0, 0.12, -0.06), Vector3(0.07, 0.04, 0.07), Color(0.98, 0.92, 0.55))
+			LowPoly.add_blob(st, Vector3(0, 0.09, -0.17), Vector3(0.06, 0.06, 0.06), Color(0.08, 0.08, 0.1))
+			LowPoly.add_tube(st, Vector3(0, 0.08, -0.22), Vector3(0.02, 0.06, -0.38), 0.035, 0.012, Color(0.98, 0.55, 0.12))
+			LowPoly.add_tube(st, Vector3(0, 0.09, 0.12), Vector3(0, 0.07, 0.26), 0.04, 0.02, Color(0.08, 0.08, 0.1))
+		&"monkey":
+			var fur := Color(0.42, 0.28, 0.17)
+			var face := Color(0.86, 0.72, 0.56)
+			LowPoly.add_blob(st, Vector3(0, 0.1, 0), Vector3(0.12, 0.1, 0.17), fur)
+			LowPoly.add_blob(st, Vector3(0, 0.1, -0.24), Vector3(0.09, 0.09, 0.09), fur)
+			LowPoly.add_blob(st, Vector3(0, 0.09, -0.31), Vector3(0.06, 0.05, 0.03), face)
+			for side in [-1.0, 1.0]:
+				LowPoly.add_tube(st, Vector3(0.09 * side, 0.09, -0.1), Vector3(0.3 * side, 0.07, -0.18), 0.03, 0.025, fur)
+				LowPoly.add_tube(st, Vector3(0.07 * side, 0.08, 0.12), Vector3(0.22 * side, 0.06, 0.2), 0.035, 0.03, fur)
+			LowPoly.add_tube(st, Vector3(0, 0.08, 0.16), Vector3(0.12, 0.06, 0.4), 0.025, 0.02, fur)
+		&"boar":
+			var fur := Color(0.32, 0.25, 0.22)
+			var k := 0.75
+			LowPoly.add_blob(st, Vector3(0, 0.22, 0) * k, Vector3(0.28, 0.24, 0.48) * k, fur)
+			LowPoly.add_blob(st, Vector3(0, 0.2, -0.5) * k, Vector3(0.17, 0.16, 0.2) * k, fur)
+			LowPoly.add_tube(st, Vector3(0, 0.17, -0.65) * k, Vector3(0, 0.15, -0.8) * k, 0.09 * k, 0.075 * k, fur)
+			LowPoly.add_blob(st, Vector3(0, 0.15, -0.84) * k, Vector3(0.07, 0.06, 0.04) * k, Color(0.62, 0.45, 0.42))
+			for side in [-1.0, 1.0]:
+				LowPoly.add_tube(st, Vector3(0.06 * side, 0.1, -0.74) * k, Vector3(0.1 * side, 0.2, -0.82) * k, 0.02 * k, 0.01 * k, Color(0.95, 0.92, 0.82))
+				for z in [-0.3, 0.3]:
+					LowPoly.add_tube(st, Vector3(0.18 * side, 0.2, z) * k, Vector3(0.45 * side, 0.16, z * 1.05) * k, 0.07 * k, 0.05 * k, fur)
+		&"jaguar":
+			var fur := Color(0.88, 0.62, 0.22)
+			var spot := Color(0.18, 0.12, 0.08)
+			var k := 0.75
+			LowPoly.add_blob(st, Vector3(0, 0.2, 0) * k, Vector3(0.22, 0.2, 0.55) * k, fur)
+			LowPoly.add_blob(st, Vector3(0, 0.18, -0.66) * k, Vector3(0.15, 0.13, 0.16) * k, fur)
+			for i in 10:
+				var side := -1.0 if i % 2 == 0 else 1.0
+				LowPoly.add_blob(st, Vector3(side * 0.15, 0.3, -0.4 + i * 0.09) * k, Vector3(0.04, 0.03, 0.05) * k, spot)
+			for side in [-1.0, 1.0]:
+				for z in [-0.38, 0.38]:
+					LowPoly.add_tube(st, Vector3(0.14 * side, 0.2, z) * k, Vector3(0.55 * side, 0.15, z * 1.05) * k, 0.07 * k, 0.05 * k, fur)
+			LowPoly.add_tube(st, Vector3(0, 0.2, 0.52) * k, Vector3(0.25, 0.12, 1.1) * k, 0.045 * k, 0.035 * k, fur)
 	return LowPoly.commit_smooth(st)
+
+
+## Captain Gus's white cap with its black band, visor and gold badge.
+static func _cap_mesh() -> Mesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 81
+	var st := LowPoly.begin()
+	var top := CylinderMesh.new()
+	top.top_radius = 0.15
+	top.bottom_radius = 0.135
+	top.height = 0.09
+	top.radial_segments = 12
+	top.rings = 1
+	LowPoly.add_shape(st, top, Transform3D(Basis(), Vector3(0, 0.08, 0)), Color(0.95, 0.95, 0.93), 0.0, 0.04, rng)
+	var band := CylinderMesh.new()
+	band.top_radius = 0.14
+	band.bottom_radius = 0.14
+	band.height = 0.035
+	band.radial_segments = 12
+	band.rings = 1
+	LowPoly.add_shape(st, band, Transform3D(Basis(), Vector3(0, 0.03, 0)), Color(0.12, 0.13, 0.18), 0.0, 0.02, rng)
+	var visor := BoxMesh.new()
+	visor.size = Vector3(0.18, 0.018, 0.1)
+	LowPoly.add_shape(st, visor, Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, 0.02, -0.15)), Color(0.08, 0.08, 0.09), 0.0, 0.0, rng)
+	var badge := BoxMesh.new()
+	badge.size = Vector3(0.06, 0.045, 0.018)
+	LowPoly.add_shape(st, badge, Transform3D(Basis(), Vector3(0, 0.075, -0.145)), Color(0.95, 0.76, 0.25), 0.0, 0.0, rng)
+	return LowPoly.commit(st)
 
 
 static func _stone_mesh() -> Mesh:

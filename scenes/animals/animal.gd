@@ -11,7 +11,7 @@ signal died(animal: Animal)
 ## Physics layer 5 is for animals. Players walk through them; punches still hit them.
 const ANIMAL_LAYER := 1 << 4
 
-enum State { IDLE, WANDER, FLEE, DEAD }
+enum State { IDLE, WANDER, FLEE, CHASE, DEAD }
 
 var display_name := "Animal"
 var max_health := 20.0
@@ -21,6 +21,19 @@ var flee_speed := 5.0
 var skittish_distance := 0.0
 ## How long it keeps running after being scared or hit.
 var flee_time := 4.0
+## Predators (Island 2): hunts players it sees within aggro_distance (half that if they crouch).
+var aggressive := false
+## Fights back: charges whoever hit it (a boar), until it's badly hurt.
+var retaliates := false
+var aggro_distance := 14.0
+var chase_speed := 6.0
+var attack_damage := 15.0
+var attack_reach := 1.9
+## Seconds between bites.
+var attack_gap := 1.2
+## Gives up the chase after this long, or when the player gets this far away.
+var chase_time := 12.0
+var attack_sound := ""
 var loot_id: StringName
 ## Sound groups (see Sfx) for this animal's voice. Empty = silent.
 var hurt_sound := ""
@@ -53,6 +66,9 @@ var _state_time := 0.0
 var _move_dir := Vector3.FORWARD
 var _scare_check := 0.0
 var _idle_sound_time := 0.0
+var _chase_target: Node3D
+var _attack_cooldown := 0.0
+var _lunge := 0.0
 var _flash: StandardMaterial3D
 var _rng := RandomNumberGenerator.new()
 
@@ -134,6 +150,8 @@ func _physics_process(delta: float) -> void:
 				_start_idle()
 			elif not _is_safe_ahead(_move_dir):
 				_turn_toward_safety()
+		State.CHASE:
+			target_speed = _update_chase(delta)
 
 	# Accelerate smoothly instead of instantly (knockback from a punch can play out).
 	var wanted := _move_dir * target_speed
@@ -149,6 +167,9 @@ func _physics_process(delta: float) -> void:
 	if flat_speed > 0.2:
 		rotation.y = lerp_angle(rotation.y, atan2(-velocity.x, -velocity.z), 1.0 - exp(-8.0 * delta))
 	_animate(delta, flat_speed)
+	# A quick lunge forward when biting.
+	_lunge = move_toward(_lunge, 0.0, delta * 4.0)
+	model.position.z = -sin(_lunge * PI) * 0.35
 
 
 func _start_idle() -> void:
@@ -164,6 +185,50 @@ func _start_wander() -> void:
 		_turn_toward_safety()
 
 
+## Hunting a player: run at them and bite when close. Returns the speed to move at.
+func _update_chase(delta: float) -> float:
+	_attack_cooldown = maxf(_attack_cooldown - delta, 0.0)
+	if _chase_target == null or not is_instance_valid(_chase_target) or _state_time <= 0.0:
+		_start_idle()
+		return 0.0
+	var offset: Vector3 = _chase_target.global_position - global_position
+	offset.y = 0.0
+	var distance := offset.length()
+	if distance > aggro_distance * 2.5:
+		_start_idle()
+		return 0.0
+	if distance > 0.01:
+		_move_dir = offset / distance
+	if distance < attack_reach:
+		if _attack_cooldown <= 0.0:
+			_attack_cooldown = attack_gap
+			_bite(_chase_target)
+		return 0.0
+	return chase_speed
+
+
+func start_chase(target: Node3D) -> void:
+	if state == State.DEAD:
+		return
+	if state != State.CHASE:
+		_make_sound(attack_sound, -2.0)
+	state = State.CHASE
+	_chase_target = target
+	_state_time = chase_time
+
+
+## Hurts the player it caught. A joined player is hurt on their own computer (WorldSync).
+func _bite(target: Node3D) -> void:
+	_lunge = 1.0
+	_make_sound(attack_sound, 0.0)
+	if target.has_method("take_damage"):
+		target.take_damage(attack_damage)
+	elif target is RemotePlayer:
+		var sync := WorldSync.find(self)
+		if sync != null:
+			sync.hurt_player((target as RemotePlayer).peer_id, attack_damage)
+
+
 ## Run away from `from` for a few seconds.
 func flee_from(from: Vector3) -> void:
 	state = State.FLEE
@@ -177,6 +242,14 @@ func flee_from(from: Vector3) -> void:
 
 ## Scared by players who run or sprint nearby. Crouching lets you sneak up.
 func _check_for_scary_players() -> void:
+	if state == State.CHASE:
+		return
+	if aggressive:
+		for player in get_tree().get_nodes_in_group("players") + get_tree().get_nodes_in_group("remote_players"):
+			var sight := aggro_distance * (0.5 if player.is_crouching else 1.0)
+			if global_position.distance_to(player.global_position) < sight:
+				start_chase(player)
+				return
 	if skittish_distance <= 0.0 or state == State.FLEE:
 		return
 	for player in get_tree().get_nodes_in_group("players") + get_tree().get_nodes_in_group("remote_players"):
@@ -225,7 +298,11 @@ func take_hit(amount: float, from: Node, at: Vector3, weapon_id: String = "") ->
 		var push := global_position - (from as Node3D).global_position
 		push.y = 0.0
 		velocity += push.normalized() * 3.0 + Vector3(0.0, 2.5, 0.0)
-		flee_from((from as Node3D).global_position)
+		# Fighters charge back while they're still healthy; everyone else runs.
+		if (aggressive or retaliates) and health > max_health * 0.25:
+			start_chase(from as Node3D)
+		else:
+			flee_from((from as Node3D).global_position)
 	if net_id >= 0 and Network.is_host():
 		var sync := WorldSync.find(self)
 		if sync != null:

@@ -127,7 +127,8 @@ func _matches(objective: Dictionary, expected_kind: String, key: String) -> bool
 		return false
 	# What each kind of objective is about: who (talk), which item (give, feed), which flag.
 	var about := "npc" if expected_kind == "talk" else ("flag" if expected_kind == "flag" else "item")
-	return key == String(objective.get(about, ""))
+	var wanted := String(objective.get(about, ""))
+	return wanted == "any" or key == wanted
 
 
 func _all_done(id: String) -> bool:

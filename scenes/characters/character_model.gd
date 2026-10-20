@@ -12,7 +12,7 @@ extends Node3D
 ## The character faces -Z (Godot's "forward"). Body parts are separate nodes so
 ## they can be animated: breathing, looking at someone, talking and gesturing.
 
-enum Hat { NONE, PILOT_CAP, BEANIE }
+enum Hat { NONE, PILOT_CAP, BEANIE, NURSE_CAP }
 
 ## Flat-shaded facets (the How to Fish look). Turn off for smooth, rounded shading.
 @export var faceted := true
@@ -32,6 +32,8 @@ enum Hat { NONE, PILOT_CAP, BEANIE }
 @export var tie_color := Color(0.12, 0.14, 0.22)
 @export var mustache := false
 @export var beard := false
+## Hair tied up in a bun at the back of the head.
+@export var hair_bun := false
 ## An apron over the shirt, from the chest to the knees (like the cooks in How to Fish).
 @export var wear_apron := false
 @export var apron_color := Color(0.85, 0.5, 0.16)
@@ -192,6 +194,13 @@ func _build_head() -> void:
 			_add(st, _box(Vector3(0.06, 0.045, 0.018)), cap + Vector3(0, -0.004, -0.15), Color(0.95, 0.76, 0.25), tilt)
 		Hat.BEANIE:
 			_add(st, _sphere(0.14, 10, 6), Vector3(0, 0.37, 0.015), hat_color, Basis.from_scale(Vector3(1.0, 0.75, 1.0)))
+		Hat.NURSE_CAP:
+			_add(st, _box(Vector3(0.2, 0.07, 0.11)), Vector3(0, 0.43, -0.02), Color(0.98, 0.98, 0.97), Basis(Vector3.RIGHT, -0.25))
+			_add(st, _box(Vector3(0.05, 0.016, 0.014)), Vector3(0, 0.44, -0.08), Color(0.85, 0.15, 0.15), Basis(Vector3.RIGHT, -0.25))
+			_add(st, _box(Vector3(0.016, 0.05, 0.014)), Vector3(0, 0.44, -0.08), Color(0.85, 0.15, 0.15), Basis(Vector3.RIGHT, -0.25))
+	if hair_bun:
+		_add(st, _sphere(0.11, 10, 6), Vector3(0, 0.3, 0.05), hair_color, Basis.from_scale(Vector3(1.05, 1.1, 1.0)))
+		_add(st, _sphere(0.065, 8, 5), Vector3(0, 0.35, 0.14), hair_color)
 	_head.add_child(_mesh(st))
 
 

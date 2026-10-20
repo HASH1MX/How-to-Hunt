@@ -82,6 +82,58 @@ static func leafy_tree(model_seed: int) -> ArrayMesh:
 	return LowPoly.commit(st)
 
 
+## A palm tree: a tall, gently curving ringed trunk with drooping fronds and coconuts.
+static func palm_tree(model_seed: int) -> ArrayMesh:
+	var rng := _rng(model_seed)
+	var st := LowPoly.begin()
+	var height := rng.randf_range(6.0, 8.5)
+	var bend := Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized() * rng.randf_range(0.8, 1.8)
+	var palm_bark := Color(0.5, 0.38, 0.25)
+	var points: Array[Vector3] = []
+	for i in 7:
+		var t := i / 6.0
+		points.append(Vector3(0, t * height, 0) + bend * t * t)
+	for i in 6:
+		var radius := lerpf(0.26, 0.16, i / 6.0)
+		LowPoly.add_shape(st, _cylinder(radius * 0.92, radius, points[i].distance_to(points[i + 1]) + 0.05, 7), _between(points[i], points[i + 1]),
+				palm_bark.darkened(0.08 * (i % 2)), 0.02, 0.06, rng)
+	var top := points[6]
+	var leaf_dark := Color(0.16, 0.42, 0.14)
+	var leaf_light := Color(0.32, 0.6, 0.2)
+	for i in 8:
+		var angle := TAU * i / 8.0 + rng.randf_range(-0.2, 0.2)
+		var out := Vector3(cos(angle), 0, sin(angle))
+		var mid := top + out * 1.6 + Vector3(0, 0.35, 0)
+		var tip := top + out * 3.0 + Vector3(0, -0.9, 0)
+		for part in [[top, mid], [mid, tip]]:
+			var a: Vector3 = part[0]
+			var b: Vector3 = part[1]
+			var frond := BoxMesh.new()
+			frond.size = Vector3(0.7, 0.04, a.distance_to(b) + 0.1)
+			var look := Basis.looking_at((b - a).normalized(), Vector3.UP)
+			LowPoly.add_shape(st, frond, Transform3D(look, (a + b) * 0.5), leaf_dark.lerp(leaf_light, rng.randf()), 0.05, 0.1, rng)
+	for i in 3:
+		var angle := rng.randf() * TAU
+		LowPoly.add_shape(st, _sphere(0.2, 6, 4), Transform3D(Basis(), top + Vector3(cos(angle) * 0.25, -0.35, sin(angle) * 0.25)), Color(0.38, 0.25, 0.14), 0.02, 0.08, rng)
+	return LowPoly.commit(st)
+
+
+## A low fern: a ring of long bright fronds.
+static func fern(model_seed: int) -> ArrayMesh:
+	var rng := _rng(model_seed)
+	var st := LowPoly.begin()
+	var green := Color(0.28, 0.55, 0.18)
+	for i in rng.randi_range(6, 9):
+		var angle := TAU * i / 8.0 + rng.randf_range(-0.3, 0.3)
+		var length := rng.randf_range(0.7, 1.1)
+		var tip := Vector3(cos(angle) * length, rng.randf_range(0.35, 0.6), sin(angle) * length)
+		var frond := BoxMesh.new()
+		frond.size = Vector3(0.22, 0.02, length)
+		var look := Basis.looking_at(tip.normalized(), Vector3.UP)
+		LowPoly.add_shape(st, frond, Transform3D(look, tip * 0.5), green.lightened(rng.randf_range(0.0, 0.2)), 0.04, 0.1, rng)
+	return LowPoly.commit(st)
+
+
 static func birch_tree(model_seed: int) -> ArrayMesh:
 	var rng := _rng(model_seed)
 	var st := LowPoly.begin()

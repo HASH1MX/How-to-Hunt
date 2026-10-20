@@ -7,12 +7,16 @@ extends Node3D
 ## and small things are split into chunks that hide when far away.
 
 @export var terrain: Terrain
+## "forest" (pines, birches - the Crash Forest) or "jungle" (palms, ferns - Island 2).
+@export var biome := "forest"
 @export var scatter_seed: int = 42
 ## Keep this area around the middle free of trees (the crash site).
 @export var clearing_radius: float = 24.0
 ## No grass or small props within no_grass_radius of this node (e.g. the crashed plane).
 @export var no_grass_center: Node3D
 @export var no_grass_radius: float = 11.0
+## More places kept clear of grass and small props (camps), 6 m around each.
+@export var extra_clear_spots: PackedVector2Array = []
 
 @export_group("Amounts")
 @export var pine_count: int = 1300
@@ -55,6 +59,9 @@ func generate() -> void:
 	_trunk_shape.radius = 0.35
 	_trunk_shape.height = 4.0
 
+	if biome == "jungle":
+		_generate_jungle(rng)
+		return
 	# Each line: name, model builder, seed, how many, and settings (see _scatter).
 	_scatter("Pines", PropLibrary.pine_tree, 100, pine_count, rng,
 			{min_dist = clearing_radius, max_edge = 0.95, scale = Vector2(0.8, 1.25), collision = "trunk", tint = 0.1, sink = 0.3})
@@ -78,6 +85,42 @@ func generate() -> void:
 			{max_edge = 0.9, keep_off_crash_site = true, shadow = false, view_distance = SMALL_PROP_VIEW_DISTANCE})
 	_scatter("Grass", PropLibrary.grass_clump, 400, grass_count, rng,
 			{max_edge = 0.95, scale = Vector2(0.7, 1.4), tint = 0.15, keep_off_crash_site = true, patchy = true, shadow = false, view_distance = GRASS_VIEW_DISTANCE, sink = 0.05})
+
+
+## Island 2: palms everywhere, leafy trees, ferns and bushes, flowers and long grass.
+func _generate_jungle(rng: RandomNumberGenerator) -> void:
+	_scatter("Palms", PropLibrary.palm_tree, 600, 700, rng,
+			{min_dist = clearing_radius, max_edge = 1.0, scale = Vector2(0.85, 1.25), collision = "trunk", tint = 0.1, sink = 0.3})
+	_scatter("LeafyTrees", PropLibrary.leafy_tree, 200, 260, rng,
+			{min_dist = clearing_radius, max_edge = 0.7, scale = Vector2(1.0, 1.5), collision = "trunk", tint = 0.15, sink = 0.3})
+	_scatter("Rocks", PropLibrary.rock, 300, 160, rng,
+			{min_dist = clearing_radius * 0.6, max_edge = 1.0, scale = Vector2(0.5, 1.6), collision = "convex", keep_off_crash_site = true})
+	_scatter("Ferns", PropLibrary.fern, 640, 1400, rng,
+			{max_edge = 0.85, scale = Vector2(0.8, 1.6), tint = 0.15, keep_off_crash_site = true, shadow = false, view_distance = GRASS_VIEW_DISTANCE})
+	_scatter("Bushes", PropLibrary.bush, 420, 700, rng,
+			{min_dist = clearing_radius * 0.5, max_edge = 0.85, scale = Vector2(0.9, 1.7), tint = 0.15, keep_off_crash_site = true, view_distance = GRASS_VIEW_DISTANCE})
+	_scatter("Flowers", PropLibrary.flowers, 460, 1200, rng,
+			{max_edge = 0.85, keep_off_crash_site = true, patchy = true, shadow = false, view_distance = SMALL_PROP_VIEW_DISTANCE})
+	_scatter("Grass", PropLibrary.grass_clump, 400, grass_count, rng,
+			{max_edge = 0.9, scale = Vector2(0.9, 1.7), tint = 0.15, keep_off_crash_site = true, patchy = true, shadow = false, view_distance = GRASS_VIEW_DISTANCE, sink = 0.05})
+
+
+## Removes everything (trees, bushes, grass and their colliders) within `radius` of a spot,
+## for camps that are placed after the island was planted.
+func clear_area(center: Vector2, radius: float) -> void:
+	for child in get_children():
+		if child is MultiMeshInstance3D:
+			var multimesh: MultiMesh = child.multimesh
+			for i in multimesh.instance_count:
+				var origin := multimesh.get_instance_transform(i).origin
+				if Vector2(origin.x - center.x, origin.z - center.y).length() < radius:
+					multimesh.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ONE * 0.0001), origin))
+		elif child is StaticBody3D:
+			for shape in child.get_children():
+				if shape is CollisionShape3D:
+					var at: Vector3 = shape.global_position
+					if Vector2(at.x - center.x, at.z - center.y).length() < radius:
+						shape.queue_free()
 
 
 ## Places `count` copies of a model made by `builder`. Settings (all optional):
@@ -208,8 +251,11 @@ func _random_spot(rng: RandomNumberGenerator, min_dist: float, max_edge: float) 
 ## True if this spot is inside the area kept clear around the crash site.
 func _is_cleared(x: float, z: float) -> bool:
 	# Gus's campfire needs a bare patch around it too.
-	if Vector2(x - CAMPFIRE_SPOT.x, z - CAMPFIRE_SPOT.y).length() < 3.4:
+	if biome == "forest" and Vector2(x - CAMPFIRE_SPOT.x, z - CAMPFIRE_SPOT.y).length() < 3.4:
 		return true
+	for spot in extra_clear_spots:
+		if Vector2(x - spot.x, z - spot.y).length() < 6.0:
+			return true
 	if no_grass_center == null:
 		return false
 	var c := no_grass_center.position

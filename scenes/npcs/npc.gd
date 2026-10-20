@@ -27,6 +27,8 @@ const INTERACT_LAYER := 1 << 3
 @export var stand_after_quest := ""
 ## Where he stands (relative to the seat) after getting up.
 @export var stand_offset := Vector3(0.9, 0.0, -0.2)
+## Opens the trader's shop after talking.
+@export var opens_shop := false
 ## Sits on an airplane seat instead of standing.
 @export var sits_on_seat := false
 ## Looks at players closer than this.
@@ -49,6 +51,8 @@ const STANDING_LABEL := 2.4
 func _ready() -> void:
 	collision_layer = 1 | INTERACT_LAYER # Solid, and found by the interact ray.
 	collision_mask = 0
+	if npc_id == "gus":
+		add_to_group("story_gus")
 	_collision = get_node_or_null("CollisionShape3D")
 	if _collision != null:
 		_collision_start = _collision.position
@@ -157,7 +161,7 @@ func _try_give(player: Node) -> bool:
 	var count: int = player.inventory.take_from_active(wanted)
 	if count <= 0:
 		return false
-	var lines := GusStory.thanks_lines(String(item.id), count)
+	var lines := NinaStory.thanks_lines(String(item.id), count) if story == "nina" else GusStory.thanks_lines(String(item.id), count)
 	Sfx.play("pickup", -4.0, 0.05)
 	model.talking = true
 	player.start_dialogue(display_name, lines, func(): model.talking = false)
@@ -170,6 +174,8 @@ func interact(player: Node) -> void:
 		return
 	var first_time := not has_talked
 	var lines := first_lines if first_time or repeat_lines.is_empty() else repeat_lines
+	if story == "nina":
+		lines = NinaStory.talk_lines()
 	if story == "gus":
 		lines = GusStory.talk_lines()
 		var gifts := GusStory.give_gifts(player)
@@ -186,6 +192,13 @@ func _on_dialogue_finished(first_time: bool) -> void:
 	talked_to.emit(first_time)
 	if npc_id != "":
 		Quests.report("talk", npc_id)
+	if opens_shop:
+		var player := get_tree().get_first_node_in_group("players")
+		var hud := get_tree().get_first_node_in_group("hud")
+		if player != null and hud != null:
+			var shop := ShopMenu.new()
+			shop.player = player
+			hud.add_child(shop)
 	if first_time and quest_title != "":
 		var hud := get_tree().get_first_node_in_group("hud")
 		if hud != null:

@@ -13,7 +13,7 @@ extends Node
 ## Added to the world when a multiplayer game starts (not in solo games).
 ## The host never trusts a joined player's numbers: distance and damage are checked here.
 
-static var SPECIES: Array = [Rabbit, Chicken, Squirrel, Deer]
+static var SPECIES: Array = [Rabbit, Chicken, Squirrel, Deer, Boar, Monkey, Toucan, Jaguar]
 ## Joined players are only sent animals this close to them.
 const ANIMAL_VIEW_DISTANCE := 90.0
 const SEND_INTERVAL := 0.1
@@ -182,6 +182,18 @@ func remove_item(id: int) -> void:
 		item.queue_free()
 	_items.erase(id)
 	_item_removed.rpc(id)
+
+
+## Host: an animal bit a joined player; they lose health on their own computer.
+func hurt_player(peer: int, amount: float) -> void:
+	_hurt.rpc_id(peer, amount)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _hurt(amount: float) -> void:
+	var player := get_tree().get_first_node_in_group("players")
+	if player != null:
+		player.take_damage(clampf(amount, 0.0, 60.0))
 
 
 ## Host: pays money to a joined player (they fed Captain Gus).

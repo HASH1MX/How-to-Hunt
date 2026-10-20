@@ -1,0 +1,87 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/world/jungle/jungle.gd" id="1_jungle"]
+[ext_resource type="Script" path="res://scenes/world/terrain/terrain.gd" id="2_terrain"]
+[ext_resource type="Script" path="res://scenes/world/props/forest_scatter.gd" id="3_scatter"]
+[ext_resource type="Script" path="res://scenes/world/water/water.gd" id="5_water"]
+[ext_resource type="PackedScene" path="res://scenes/npcs/nina/nina.tscn" id="7_nina"]
+[ext_resource type="PackedScene" path="res://scenes/npcs/trader/trader.tscn" id="8_trader"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_jungle"]
+sky_top_color = Color(0.42, 0.42, 0.78, 1)
+sky_horizon_color = Color(0.98, 0.7, 0.55, 1)
+ground_bottom_color = Color(0.15, 0.3, 0.45, 1)
+ground_horizon_color = Color(0.88, 0.62, 0.55, 1)
+sun_angle_max = 20.0
+
+[sub_resource type="Sky" id="Sky_jungle"]
+sky_material = SubResource("ProceduralSkyMaterial_jungle")
+
+[sub_resource type="Environment" id="Environment_jungle"]
+background_mode = 2
+sky = SubResource("Sky_jungle")
+ambient_light_source = 3
+ambient_light_energy = 0.65
+tonemap_mode = 2
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 2.0
+glow_enabled = true
+glow_intensity = 0.6
+glow_bloom = 0.08
+fog_enabled = true
+fog_light_color = Color(0.95, 0.72, 0.62, 1)
+fog_density = 0.006
+fog_aerial_perspective = 0.5
+fog_sky_affect = 0.15
+adjustment_enabled = true
+adjustment_contrast = 1.08
+adjustment_saturation = 1.08
+
+[node name="Jungle" type="Node3D"]
+script = ExtResource("1_jungle")
+island_id = "jungle"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_jungle")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 0)
+rotation = Vector3(-0.45, 2.3, 0)
+light_color = Color(1, 0.8, 0.62, 1)
+light_energy = 1.4
+shadow_enabled = true
+directional_shadow_max_distance = 100.0
+
+[node name="Terrain" type="StaticBody3D" parent="."]
+script = ExtResource("2_terrain")
+size = 470.0
+resolution = 210
+noise_seed = 4242
+max_height = 7.0
+flat_radius = 18.0
+mountain_radius = 100.0
+mountain_width = 42.0
+mountain_height = 15.0
+coast_radius = 168.0
+grass_color_a = Color(0.32, 0.56, 0.2, 1)
+grass_color_b = Color(0.2, 0.45, 0.15, 1)
+rock_color = Color(0.52, 0.48, 0.42, 1)
+sand_color = Color(0.95, 0.85, 0.6, 1)
+wet_sand_color = Color(0.72, 0.62, 0.44, 1)
+
+[node name="Water" type="MeshInstance3D" parent="." node_paths=PackedStringArray("terrain")]
+script = ExtResource("5_water")
+terrain = NodePath("../Terrain")
+
+[node name="ForestScatter" type="Node3D" parent="." node_paths=PackedStringArray("terrain")]
+script = ExtResource("3_scatter")
+terrain = NodePath("../Terrain")
+biome = "jungle"
+grass_count = 70000
+
+[node name="Nina" parent="." instance=ExtResource("7_nina")]
+
+[node name="Trader" parent="." instance=ExtResource("8_trader")]
+
+[node name="SpawnPoint" type="Marker3D" parent="."]

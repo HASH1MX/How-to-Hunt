@@ -76,9 +76,10 @@ static func talk_lines() -> PackedStringArray:
 			"We need to signal them. The plane's emergency case by the cockpit has a flare gun, but it's locked. Here, this is the key.",
 			"Open the case, then climb the tallest mountain you can find and fire the flare from the top. Down here among the trees nobody would see it.",
 		])
-	if Quests.is_done("signal_for_help"):
+	if Quests.is_active("rescue"):
 		return PackedStringArray([
-			"Did you see that? Beautiful! Now we wait. Someone must have seen it...",
+			"A HELICOPTER! They saw the flare! I knew it. I knew it the whole time. Mostly.",
+			"Go on, climb in. I'll hobble over right behind you. Off this rock at last!",
 		])
 	return PackedStringArray(["Drop what you hunt right in front of my face. I'll pay for it!"])
 

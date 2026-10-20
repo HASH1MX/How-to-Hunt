@@ -183,7 +183,17 @@ func _on_play_pressed() -> void:
 
 func _start_game() -> void:
 	set_process(false)
-	$World.start_game()
+	# The background is the first island; a save (or host) on another island loads that one.
+	var world: IslandWorld = $World
+	var island := IslandWorld.current_island()
+	if island != world.island_id and IslandWorld.ISLAND_SCENES.has(island):
+		world.name = "OldWorld"
+		world.queue_free()
+		world = load(IslandWorld.ISLAND_SCENES[island]).instantiate()
+		world.spawn_player = false
+		world.name = "World"
+		add_child(world)
+	world.start_game()
 	camera.queue_free()
 	_ui.queue_free()
 	# Fade back in on a separate layer that outlives the menu UI.

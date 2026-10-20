@@ -128,7 +128,7 @@ func _open_settings() -> void:
 
 func _set_paused(paused: bool) -> void:
 	if player != null:
-		player.in_menu = paused
+		player.in_menu = paused or player.in_cutscene
 
 
 func _add_button(parent: Control, text: String, on_pressed: Callable) -> Button:

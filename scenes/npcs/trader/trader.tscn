@@ -1,0 +1,45 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/npcs/npc.gd" id="1_npc"]
+[ext_resource type="Script" path="res://scenes/characters/character_model.gd" id="2_model"]
+[ext_resource type="FontFile" path="res://assets/fonts/Kurale-Regular.ttf" id="3_font"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_trader"]
+radius = 0.4
+height = 1.9
+
+[node name="Trader" type="StaticBody3D"]
+script = ExtResource("1_npc")
+display_name = "Trader Tomas"
+npc_id = "trader"
+story = "trader"
+first_lines = PackedStringArray("Customers! Real live customers! Welcome to Tomas's Trading Post, the only shop on the island.", "I buy anything you hunt. Just drop it in that big crate by my stall and I pay on the spot.", "And I sell the good stuff: shotguns, SMGs, rifles, even a golden sniper. Take a look!")
+repeat_lines = PackedStringArray("Back again? Have a look!")
+opens_shop = true
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("2_model")
+skin_color = Color(0.82, 0.62, 0.45, 1)
+shirt_color = Color(0.25, 0.38, 0.6, 1)
+pants_color = Color(0.3, 0.25, 0.2, 1)
+wear_apron = true
+hat = 2
+hat_color = Color(0.45, 0.45, 0.48, 1)
+beard = true
+hair_color = Color(0.4, 0.28, 0.18, 1)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("CapsuleShape3D_trader")
+
+[node name="NameLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
+billboard = 1
+modulate = Color(0.98, 0.96, 0.92, 1)
+outline_modulate = Color(0, 0, 0, 0.55)
+text = "Trader Tomas"
+font = ExtResource("3_font")
+font_size = 40
+outline_size = 10
+pixel_size = 0.004
+visibility_range_end = 15.0

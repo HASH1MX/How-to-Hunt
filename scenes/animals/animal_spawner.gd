@@ -24,9 +24,16 @@ var sync: WorldSync
 var _rng := RandomNumberGenerator.new()
 
 
+## Which animals and how many (species script -> count). Empty = the Crash Forest's animals.
+var counts := {}
+## These keep to the outer parts of the island (like deer).
+var shy_species: Array = [Deer]
+
+
 func _ready() -> void:
 	_rng.randomize()
-	var counts := {Rabbit: rabbits, Chicken: chickens, Squirrel: squirrels, Deer: deer}
+	if counts.is_empty():
+		counts = {Rabbit: rabbits, Chicken: chickens, Squirrel: squirrels, Deer: deer}
 	for species in counts:
 		for i in counts[species]:
 			_spawn(species)
@@ -34,7 +41,7 @@ func _ready() -> void:
 
 func _spawn(species: GDScript) -> void:
 	# Deer keep to the outer forest; small animals can be anywhere.
-	var near := min_distance * (2.5 if species == Deer else 1.0)
+	var near := min_distance * (2.5 if shy_species.has(species) else 1.0)
 	var spot := _find_spot(near, max_distance)
 	if spot == Vector3.INF:
 		return

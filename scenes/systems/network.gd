@@ -26,7 +26,7 @@ signal upnp_finished
 const DEFAULT_PORT := 7777
 const MAX_PLAYERS := 10
 ## Bump this when a change makes old and new versions unable to play together.
-const PROTOCOL_VERSION := 10
+const PROTOCOL_VERSION := 12
 const SEND_RATE := 20.0
 const MAIN_MENU := "res://scenes/ui/main_menu/main_menu.tscn"
 const SAVE_PATH := "user://multiplayer.cfg"
@@ -51,6 +51,8 @@ var lobby_code := ""
 var steam := SteamLink.new()
 ## A joined player's saved progress, sent by the host (applied when the game starts).
 var my_saved_data := {}
+## Which island the host's game is on (joined players load the same one).
+var host_island := "crash_forest"
 
 var _world: Node3D
 var _remotes := {}
@@ -270,6 +272,29 @@ func send_state(position: Vector3, yaw: float, pitch: float, flags: int) -> void
 		_state.rpc(position, yaw, pitch, flags)
 
 
+## The world is being replaced (travelling to another island): forget the old one.
+func forget_world() -> void:
+	for remote in _remotes.values():
+		if is_instance_valid(remote):
+			remote.queue_free()
+	_remotes.clear()
+	_world = null
+
+
+## Host (or a solo player): everyone moves to another island at once.
+func travel_to(island: String) -> void:
+	if is_online():
+		_travel.rpc(island)
+	else:
+		IslandWorld.travel_to(get_tree(), island)
+
+
+@rpc("authority", "call_local", "reliable")
+func _travel(island: String) -> void:
+	host_island = island
+	IslandWorld.travel_to(get_tree(), island)
+
+
 ## A joined player sends their progress to the host, who keeps it in the world save.
 func send_progress(progress: Dictionary) -> void:
 	if is_online() and not multiplayer.is_server():
@@ -368,7 +393,7 @@ func _register(version: int, requested_name: String, save_key: String) -> void:
 		save_key = "%s#%d" % [save_key, id]
 	_keys[id] = save_key
 	# Tell the new player who is here (and their saved progress), and everyone else that they arrived.
-	_welcome.rpc_id(id, players, final_name, SaveManager.get_player_data(save_key))
+	_welcome.rpc_id(id, players, final_name, SaveManager.get_player_data(save_key), IslandWorld.current_island())
 	for other in players:
 		if other != 1 and other != id:
 			_player_added.rpc_id(other, id, final_name)
@@ -377,8 +402,9 @@ func _register(version: int, requested_name: String, save_key: String) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func _welcome(all_players: Dictionary, my_name: String, saved: Dictionary) -> void:
+func _welcome(all_players: Dictionary, my_name: String, saved: Dictionary, island: String) -> void:
 	_connecting = false
+	host_island = island
 	players = all_players
 	player_name = my_name
 	my_saved_data = saved

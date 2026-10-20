@@ -119,8 +119,10 @@ var stamina: float
 var breath: float
 var water_jumps_left: int
 var spawn_position: Vector3
-## Cash. Earned by selling loot to the merchant (a later stage).
+## Cash. Earned by feeding Captain Gus and selling to the trader.
 var money := 0
+## Which island this player is on (saved positions only count on the same island).
+var island_id := ""
 ## Water is above the waist: the player sinks and moves slowly.
 var is_in_deep_water := false
 ## The eyes are below the water surface: breath runs down.
@@ -134,6 +136,8 @@ var is_exhausted := false
 var in_dialogue := false
 ## True while the pause menu is open: no moving, looking, punching or using things.
 var in_menu := false
+## True during a story film (the helicopter): like in_menu, and the pause menu can't undo it.
+var in_cutscene := false
 ## Steep surfaces touched last frame, used to stop "climbing" walls by jumping.
 var _steep_normals: Array[Vector3] = []
 var is_crouching := false
@@ -400,6 +404,7 @@ func _update_food(delta: float) -> void:
 func to_save_data() -> Dictionary:
 	return {
 		pos = [global_position.x, global_position.y, global_position.z],
+		island = island_id,
 		yaw = rotation.y,
 		pitch = head.rotation.x,
 		health = health,
@@ -415,7 +420,7 @@ func load_save_data(saved: Dictionary) -> void:
 	if saved.is_empty():
 		return
 	var pos: Array = saved.get("pos", [])
-	if pos.size() == 3:
+	if pos.size() == 3 and str(saved.get("island", IslandWorld.FIRST_ISLAND)) == island_id:
 		global_position = Vector3(pos[0], pos[1], pos[2])
 		velocity = Vector3.ZERO
 	rotation.y = float(saved.get("yaw", rotation.y))
