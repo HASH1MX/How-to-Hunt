@@ -35,17 +35,17 @@ static func _build_items() -> void:
 	_weapon(&"knife", "Knife", Color(0.82, 0.84, 0.86), WeaponMeshes.knife(), Vector3(0.06, 0.05, 0.35),
 			{use = "melee", damage = 25.0, reach = 2.7, fire_gap = 0.35, hold = "knife"})
 	_weapon(&"pistol", "Pistol", Color(0.3, 0.32, 0.36), WeaponMeshes.pistol(), Vector3(0.06, 0.16, 0.24),
-			{use = "gun", damage = 25.0, reach = 70.0, fire_gap = 0.22, magazine = 8, reload_time = 1.3, ammo = "pistol", spread = 1.0, recoil = 0.5, sound = "gun_pistol", hold = "pistol", price = 150})
+			{use = "gun", damage = 25.0, reach = 70.0, fire_gap = 0.22, magazine = 8, reload_time = 1.3, ammo = "pistol", spread = 1.0, recoil = 2.2, sound = "gun_pistol", hold = "pistol", price = 150})
 	_weapon(&"double_barrel", "Double-Barrel Shotgun", Color(0.48, 0.3, 0.16), WeaponMeshes.double_barrel(), Vector3(0.08, 0.14, 0.95),
-			{use = "gun", damage = 11.0, pellets = 8, reach = 32.0, fire_gap = 0.55, magazine = 2, reload_time = 2.2, ammo = "shells", spread = 6.0, recoil = 1.4, sound = "gun_shotgun", hold = "rifle", price = 400})
+			{use = "gun", damage = 11.0, pellets = 8, reach = 32.0, fire_gap = 0.55, magazine = 2, reload_time = 2.2, ammo = "shells", spread = 6.0, recoil = 7.0, sound = "gun_shotgun", hold = "rifle", price = 400})
 	_weapon(&"smg", "SMG", Color(0.2, 0.21, 0.24), WeaponMeshes.smg(), Vector3(0.07, 0.28, 0.4),
-			{use = "gun", damage = 12.0, reach = 45.0, fire_gap = 0.075, automatic = true, magazine = 30, reload_time = 1.8, ammo = "smg", spread = 3.0, recoil = 0.25, sound = "gun_smg", hold = "pistol", price = 650})
+			{use = "gun", damage = 12.0, reach = 45.0, fire_gap = 0.075, automatic = true, magazine = 30, reload_time = 1.8, ammo = "smg", spread = 3.0, recoil = 0.9, sound = "gun_smg", hold = "pistol", price = 650})
 	_weapon(&"assault_rifle", "Assault Rifle", Color(0.62, 0.52, 0.36), WeaponMeshes.assault_rifle(), Vector3(0.08, 0.25, 0.85),
-			{use = "gun", damage = 20.0, reach = 95.0, fire_gap = 0.11, automatic = true, magazine = 30, reload_time = 2.0, ammo = "rifle", spread = 1.6, recoil = 0.35, sound = "gun_rifle", hold = "rifle", price = 900})
+			{use = "gun", damage = 20.0, reach = 95.0, fire_gap = 0.11, automatic = true, magazine = 30, reload_time = 2.0, ammo = "rifle", spread = 1.6, recoil = 1.25, sound = "gun_rifle", hold = "rifle", price = 900})
 	_weapon(&"sniper", "Sniper Rifle", Color(0.86, 0.66, 0.2), WeaponMeshes.sniper(), Vector3(0.08, 0.22, 1.25),
-			{use = "gun", damage = 130.0, reach = 260.0, fire_gap = 1.2, magazine = 5, reload_time = 2.6, ammo = "sniper", spread = 0.0, zoom_fov = 18.0, recoil = 2.0, sound = "gun_sniper", hold = "rifle", price = 1200})
+			{use = "gun", damage = 130.0, reach = 260.0, fire_gap = 1.2, magazine = 5, reload_time = 2.6, ammo = "sniper", spread = 0.0, zoom_fov = 18.0, recoil = 8.0, sound = "gun_sniper", hold = "rifle", price = 1200})
 	_weapon(&"flare_gun", "Flare Gun", Color(0.95, 0.42, 0.1), WeaponMeshes.flare_gun(), Vector3(0.06, 0.16, 0.24),
-			{use = "flare", fire_gap = 1.5, recoil = 0.8, sound = "flare_shot", hold = "pistol"})
+			{use = "flare", fire_gap = 1.5, recoil = 4.0, sound = "flare_shot", hold = "pistol"})
 	_add(&"case_key", "Case Key", Color(0.9, 0.72, 0.28), WeaponMeshes.key(), Vector3(0.08, 0.04, 0.16))
 	_items[&"case_key"].max_stack = 1
 	_items[&"case_key"].glows = true
@@ -63,19 +63,21 @@ static func _build_items() -> void:
 	#   squirrel 20 hp, runs from 5 m, fast and tiny      -> $14
 	#   rabbit   30 hp, runs from 5 m, fast               -> $18
 	#   deer     80 hp (8 punches), runs from 10 m, fastest, only a few exist -> $60
-	_add(&"chicken", "Chicken", Color(0.64, 0.4, 0.2), _carcass_mesh(&"chicken"), Vector3(0.4, 0.2, 0.4), 6)
-	_add(&"squirrel", "Squirrel", Color(0.7, 0.4, 0.18), _carcass_mesh(&"squirrel"), Vector3(0.3, 0.15, 0.55), 14)
-	_add(&"rabbit", "Rabbit", Color(0.6, 0.5, 0.4), _carcass_mesh(&"rabbit"), Vector3(0.3, 0.2, 0.5), 18)
-	_add(&"deer", "Deer", Color(0.58, 0.4, 0.25), _carcass_mesh(&"deer"), Vector3(0.7, 0.3, 1.0), 60)
+	_add(&"chicken", "Chicken", Color(0.64, 0.4, 0.2), _carcass_mesh(&"chicken"), Vector3.ZERO, 6)
+	_add(&"squirrel", "Squirrel", Color(0.7, 0.4, 0.18), _carcass_mesh(&"squirrel"), Vector3.ZERO, 14)
+	_add(&"rabbit", "Rabbit", Color(0.6, 0.5, 0.4), _carcass_mesh(&"rabbit"), Vector3.ZERO, 18)
+	_add(&"deer", "Deer", Color(0.58, 0.4, 0.25), _carcass_mesh(&"deer"), Vector3.ZERO, 60)
 	# Island 2 (the jungle), priced the same way:
 	#   toucan   15 hp, slow, runs from 4 m                         -> $12
 	#   monkey   40 hp, fast, runs from 7 m                         -> $25
 	#   boar    120 hp, charges back and bites when hit             -> $45
 	#   jaguar  200 hp, hunts you on sight, fast, hits hard        -> $150
-	_add(&"toucan", "Toucan", Color(0.98, 0.55, 0.12), _carcass_mesh(&"toucan"), Vector3(0.3, 0.18, 0.4), 12)
-	_add(&"monkey", "Monkey", Color(0.42, 0.28, 0.17), _carcass_mesh(&"monkey"), Vector3(0.35, 0.18, 0.55), 25)
-	_add(&"boar", "Boar", Color(0.32, 0.25, 0.22), _carcass_mesh(&"boar"), Vector3(0.6, 0.35, 0.95), 45)
-	_add(&"jaguar", "Jaguar", Color(0.88, 0.62, 0.22), _carcass_mesh(&"jaguar"), Vector3(0.6, 0.3, 1.2), 150)
+	_add(&"toucan", "Toucan", Color(0.98, 0.55, 0.12), _carcass_mesh(&"toucan"), Vector3.ZERO, 12)
+	_add(&"monkey", "Monkey", Color(0.42, 0.28, 0.17), _carcass_mesh(&"monkey"), Vector3.ZERO, 25)
+	_add(&"boar", "Boar", Color(0.32, 0.25, 0.22), _carcass_mesh(&"boar"), Vector3.ZERO, 45)
+	_add(&"jaguar", "Jaguar", Color(0.88, 0.62, 0.22), _carcass_mesh(&"jaguar"), Vector3.ZERO, 150)
+	for id in [&"chicken", &"squirrel", &"rabbit", &"deer", &"toucan", &"monkey", &"boar", &"jaguar"]:
+		_items[id].icon_from_above = true
 	# Captain Gus's cap, washed up on Island 2's beach.
 	_add(&"gus_hat", "Captain Gus's Cap", Color(0.95, 0.95, 0.93), _cap_mesh(), Vector3(0.32, 0.14, 0.32))
 	_items[&"gus_hat"].glows = true
@@ -88,7 +90,8 @@ static func _add(id: StringName, display_name: String, icon_color: Color, mesh: 
 	item.display_name = display_name
 	item.icon_color = icon_color
 	item.mesh = mesh
-	item.collision_size = collision_size
+	# Vector3.ZERO = use the model's own size.
+	item.collision_size = collision_size if collision_size != Vector3.ZERO else mesh.get_aabb().size
 	item.value = value
 	_items[id] = item
 
@@ -136,23 +139,40 @@ static func _first_aid_mesh() -> Mesh:
 	return LowPoly.commit(st)
 
 
-## A crumpled pile of blue cloth.
+## A neatly folded cloth: three soft layers with blue stripes, so it reads as fabric.
 static func _cloth_mesh() -> Mesh:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
 	var st := LowPoly.begin()
-	var blob := SphereMesh.new()
-	blob.radius = 0.5
-	blob.height = 1.0
-	blob.radial_segments = 7
-	blob.rings = 4
-	var blue := Color(0.98, 0.9, 0.6) # Pale yellow cloth: easy to see in the grass.
-	for i in 4:
-		var at := Vector3(rng.randf_range(-0.07, 0.07), 0.03 + i * 0.012, rng.randf_range(-0.07, 0.07))
-		var size := Vector3(rng.randf_range(0.26, 0.36), rng.randf_range(0.05, 0.08), rng.randf_range(0.2, 0.3))
-		LowPoly.add_shape(st, blob, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(size), at), blue.lightened(0.05 * i), 0.02, 0.08, rng)
+	var cream := Color(0.98, 0.92, 0.66) # Pale, easy to see in the grass.
+	var blue := Color(0.32, 0.5, 0.82)
+	var layer := BoxMesh.new()
+	for i in 3:
+		layer.size = Vector3(0.3 - i * 0.012, 0.03, 0.22 - i * 0.01)
+		var turn := Basis(Vector3.UP, rng.randf_range(-0.08, 0.08))
+		LowPoly.add_shape(st, layer, Transform3D(turn, Vector3(rng.randf_range(-0.008, 0.008), 0.016 + i * 0.03, 0)), cream.darkened(0.04 * (2 - i)), 0.006, 0.05, rng)
+	# Rounded folded edge along the front.
+	var fold := CylinderMesh.new()
+	fold.top_radius = 0.045
+	fold.bottom_radius = 0.045
+	fold.height = 0.29
+	fold.radial_segments = 8
+	fold.rings = 1
+	LowPoly.add_shape(st, fold, Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3(0, 0.047, -0.105)), cream, 0.0, 0.04, rng)
+	# Two blue stripes across the top.
+	var stripe := BoxMesh.new()
+	stripe.size = Vector3(0.028, 0.004, 0.2)
+	for x in [-0.07, 0.07]:
+		LowPoly.add_shape(st, stripe, Transform3D(Basis(), Vector3(x, 0.093, 0.0)), blue, 0.0, 0.0, rng)
+	var band := CylinderMesh.new()
+	band.top_radius = 0.047
+	band.bottom_radius = 0.047
+	band.height = 0.028
+	band.radial_segments = 8
+	band.rings = 1
+	for x in [-0.07, 0.07]:
+		LowPoly.add_shape(st, band, Transform3D(Basis(Vector3.BACK, PI * 0.5), Vector3(x, 0.047, -0.105)), blue, 0.0, 0.0, rng)
 	return LowPoly.commit(st)
-
 
 ## A coil of orange wire with loose ends.
 static func _wire_mesh() -> Mesh:
@@ -223,110 +243,56 @@ static func _antenna_mesh() -> Mesh:
 
 
 # --- Animal bodies ---------------------------------------------------------------
-# Each is a small soft model lying on its side, facing -Z (so it points forward when held).
+# A hunted animal becomes an item that looks exactly like the animal you hunted:
+# its own model (the same one that walks around), lying on its side. Big animals are
+# shrunk a little so they can be carried. Faces -Z (points forward when held).
+
+## How much each animal is shrunk when it becomes an item.
+const CARRY_SCALE := {&"deer": 0.62, &"boar": 0.62, &"jaguar": 0.55, &"monkey": 0.85}
+
 
 static func _carcass_mesh(kind: StringName) -> Mesh:
-	var st := LowPoly.begin()
-	var eye := Color(0.1, 0.09, 0.09)
+	var species: GDScript
 	match kind:
-		&"rabbit":
-			var fur := Color(0.6, 0.5, 0.4)
-			LowPoly.add_blob(st, Vector3(0, 0.1, 0), Vector3(0.1, 0.09, 0.2), fur)
-			LowPoly.add_blob(st, Vector3(0, 0.1, -0.22), Vector3(0.07, 0.07, 0.09), fur)
-			LowPoly.add_blob(st, Vector3(0, 0.06, -0.3), Vector3(0.025, 0.02, 0.02), Color(0.93, 0.66, 0.66))
-			LowPoly.add_blob(st, Vector3(0, 0.1, 0.2), Vector3(0.045, 0.045, 0.045), Color(0.96, 0.95, 0.93))
-			for side in [-1.0, 1.0]:
-				LowPoly.add_tube(st, Vector3(0.03 * side, 0.15, -0.2), Vector3(0.05 * side, 0.12, -0.02), 0.022, 0.016, fur.darkened(0.08))
-				LowPoly.add_tube(st, Vector3(0.07 * side, 0.08, 0.12), Vector3(0.18 * side, 0.06, 0.16), 0.04, 0.025, fur)
-				LowPoly.add_tube(st, Vector3(0.06 * side, 0.08, -0.12), Vector3(0.15 * side, 0.06, -0.17), 0.028, 0.02, fur)
-				LowPoly.add_blob(st, Vector3(0.05 * side, 0.115, -0.26), Vector3(0.012, 0.012, 0.012), eye)
-		&"chicken":
-			var feathers := Color(0.64, 0.4, 0.2)
-			LowPoly.add_blob(st, Vector3(0, 0.1, 0), Vector3(0.1, 0.09, 0.14), feathers)
-			LowPoly.add_blob(st, Vector3(0, 0.1, -0.1), Vector3(0.085, 0.08, 0.08), feathers.lightened(0.05))
-			LowPoly.add_tube(st, Vector3(0, 0.1, -0.12), Vector3(0, 0.09, -0.2), 0.045, 0.035, feathers)
-			LowPoly.add_blob(st, Vector3(0, 0.09, -0.22), Vector3(0.04, 0.045, 0.045), feathers)
-			LowPoly.add_blob(st, Vector3(0, 0.14, -0.22), Vector3(0.012, 0.025, 0.03), Color(0.85, 0.15, 0.12))
-			LowPoly.add_tube(st, Vector3(0, 0.085, -0.255), Vector3(0, 0.08, -0.29), 0.014, 0.004, Color(0.95, 0.62, 0.15))
-			for i in 3:
-				var angle := (i - 1) * 0.5
-				LowPoly.add_tube(st, Vector3(0, 0.12, 0.12), Vector3(sin(angle) * 0.1, 0.17, 0.25), 0.04, 0.02, feathers.darkened(0.06 + 0.03 * i))
-			for side in [-1.0, 1.0]:
-				LowPoly.add_blob(st, Vector3(0.095 * side, 0.115, 0.0), Vector3(0.03, 0.07, 0.1), feathers.darkened(0.08))
-				LowPoly.add_tube(st, Vector3(0.04 * side, 0.07, 0.04), Vector3(0.2 * side, 0.07, 0.06), 0.014, 0.009, Color(0.95, 0.62, 0.15))
-				LowPoly.add_blob(st, Vector3(0.04 * side, 0.115, -0.21), Vector3(0.009, 0.009, 0.009), eye)
-		&"squirrel":
-			var fur := Color(0.7, 0.4, 0.18)
-			LowPoly.add_blob(st, Vector3(0, 0.065, 0), Vector3(0.065, 0.06, 0.12), fur)
-			LowPoly.add_blob(st, Vector3(0, 0.065, -0.14), Vector3(0.05, 0.05, 0.06), fur)
-			LowPoly.add_blob(st, Vector3(0, 0.04, -0.19), Vector3(0.018, 0.016, 0.016), Color(0.25, 0.15, 0.12))
-			LowPoly.add_tube(st, Vector3(0, 0.06, 0.1), Vector3(0.05, 0.07, 0.22), 0.03, 0.05, fur.lightened(0.04))
-			LowPoly.add_tube(st, Vector3(0.05, 0.07, 0.22), Vector3(0.14, 0.07, 0.3), 0.05, 0.06, fur.lightened(0.08))
-			for side in [-1.0, 1.0]:
-				LowPoly.add_blob(st, Vector3(0.035 * side, 0.105, -0.17), Vector3(0.012, 0.025, 0.012), fur.darkened(0.12))
-				LowPoly.add_tube(st, Vector3(0.05 * side, 0.05, 0.06), Vector3(0.12 * side, 0.04, 0.08), 0.03, 0.018, fur)
-				LowPoly.add_tube(st, Vector3(0.04 * side, 0.05, -0.07), Vector3(0.1 * side, 0.04, -0.1), 0.02, 0.014, fur)
-				LowPoly.add_blob(st, Vector3(0.03 * side, 0.08, -0.17), Vector3(0.009, 0.009, 0.009), eye)
-		&"deer":
-			var fur := Color(0.58, 0.4, 0.25)
-			var light := Color(0.9, 0.84, 0.72)
-			var k := 0.7 # Shrunk a little so it is carryable.
-			LowPoly.add_blob(st, Vector3(0, 0.2, 0) * k, Vector3(0.2, 0.18, 0.45) * k, fur)
-			LowPoly.add_blob(st, Vector3(0, 0.14, 0) * k, Vector3(0.17, 0.12, 0.4) * k, light)
-			LowPoly.add_tube(st, Vector3(0, 0.2, -0.3) * k, Vector3(0, 0.15, -0.55) * k, 0.12 * k, 0.07 * k, fur)
-			LowPoly.add_blob(st, Vector3(0, 0.14, -0.62) * k, Vector3(0.085, 0.08, 0.13) * k, fur)
-			LowPoly.add_tube(st, Vector3(0, 0.12, -0.7) * k, Vector3(0, 0.1, -0.8) * k, 0.055 * k, 0.04 * k, light)
-			LowPoly.add_blob(st, Vector3(0, 0.1, -0.82) * k, Vector3(0.028, 0.025, 0.025) * k, Color(0.15, 0.12, 0.1))
-			LowPoly.add_tube(st, Vector3(0, 0.2, 0.42) * k, Vector3(0, 0.26, 0.54) * k, 0.04 * k, 0.03 * k, light)
-			for side in [-1.0, 1.0]:
-				LowPoly.add_tube(st, Vector3(0.07 * side, 0.2, -0.63) * k, Vector3(0.14 * side, 0.26, -0.6) * k, 0.03 * k, 0.012 * k, fur)
-				LowPoly.add_blob(st, Vector3(0.07 * side, 0.17, -0.66) * k, Vector3(0.02, 0.02, 0.02) * k, eye)
-				for z in [-0.28, 0.3]:
-					LowPoly.add_tube(st, Vector3(0.15 * side, 0.2, z) * k, Vector3(0.38 * side, 0.18, z * 1.05) * k, 0.07 * k, 0.04 * k, fur)
-					LowPoly.add_tube(st, Vector3(0.38 * side, 0.18, z * 1.05) * k, Vector3(0.5 * side, 0.14, z * 1.1) * k, 0.04 * k, 0.028 * k, fur.darkened(0.08))
-					LowPoly.add_blob(st, Vector3(0.52 * side, 0.14, z * 1.1) * k, Vector3(0.03, 0.03, 0.045) * k, Color(0.15, 0.12, 0.1))
-		&"toucan":
-			LowPoly.add_blob(st, Vector3(0, 0.09, 0), Vector3(0.11, 0.08, 0.14), Color(0.08, 0.08, 0.1))
-			LowPoly.add_blob(st, Vector3(0, 0.12, -0.06), Vector3(0.07, 0.04, 0.07), Color(0.98, 0.92, 0.55))
-			LowPoly.add_blob(st, Vector3(0, 0.09, -0.17), Vector3(0.06, 0.06, 0.06), Color(0.08, 0.08, 0.1))
-			LowPoly.add_tube(st, Vector3(0, 0.08, -0.22), Vector3(0.02, 0.06, -0.38), 0.035, 0.012, Color(0.98, 0.55, 0.12))
-			LowPoly.add_tube(st, Vector3(0, 0.09, 0.12), Vector3(0, 0.07, 0.26), 0.04, 0.02, Color(0.08, 0.08, 0.1))
-		&"monkey":
-			var fur := Color(0.42, 0.28, 0.17)
-			var face := Color(0.86, 0.72, 0.56)
-			LowPoly.add_blob(st, Vector3(0, 0.1, 0), Vector3(0.12, 0.1, 0.17), fur)
-			LowPoly.add_blob(st, Vector3(0, 0.1, -0.24), Vector3(0.09, 0.09, 0.09), fur)
-			LowPoly.add_blob(st, Vector3(0, 0.09, -0.31), Vector3(0.06, 0.05, 0.03), face)
-			for side in [-1.0, 1.0]:
-				LowPoly.add_tube(st, Vector3(0.09 * side, 0.09, -0.1), Vector3(0.3 * side, 0.07, -0.18), 0.03, 0.025, fur)
-				LowPoly.add_tube(st, Vector3(0.07 * side, 0.08, 0.12), Vector3(0.22 * side, 0.06, 0.2), 0.035, 0.03, fur)
-			LowPoly.add_tube(st, Vector3(0, 0.08, 0.16), Vector3(0.12, 0.06, 0.4), 0.025, 0.02, fur)
-		&"boar":
-			var fur := Color(0.32, 0.25, 0.22)
-			var k := 0.75
-			LowPoly.add_blob(st, Vector3(0, 0.22, 0) * k, Vector3(0.28, 0.24, 0.48) * k, fur)
-			LowPoly.add_blob(st, Vector3(0, 0.2, -0.5) * k, Vector3(0.17, 0.16, 0.2) * k, fur)
-			LowPoly.add_tube(st, Vector3(0, 0.17, -0.65) * k, Vector3(0, 0.15, -0.8) * k, 0.09 * k, 0.075 * k, fur)
-			LowPoly.add_blob(st, Vector3(0, 0.15, -0.84) * k, Vector3(0.07, 0.06, 0.04) * k, Color(0.62, 0.45, 0.42))
-			for side in [-1.0, 1.0]:
-				LowPoly.add_tube(st, Vector3(0.06 * side, 0.1, -0.74) * k, Vector3(0.1 * side, 0.2, -0.82) * k, 0.02 * k, 0.01 * k, Color(0.95, 0.92, 0.82))
-				for z in [-0.3, 0.3]:
-					LowPoly.add_tube(st, Vector3(0.18 * side, 0.2, z) * k, Vector3(0.45 * side, 0.16, z * 1.05) * k, 0.07 * k, 0.05 * k, fur)
-		&"jaguar":
-			var fur := Color(0.88, 0.62, 0.22)
-			var spot := Color(0.18, 0.12, 0.08)
-			var k := 0.75
-			LowPoly.add_blob(st, Vector3(0, 0.2, 0) * k, Vector3(0.22, 0.2, 0.55) * k, fur)
-			LowPoly.add_blob(st, Vector3(0, 0.18, -0.66) * k, Vector3(0.15, 0.13, 0.16) * k, fur)
-			for i in 10:
-				var side := -1.0 if i % 2 == 0 else 1.0
-				LowPoly.add_blob(st, Vector3(side * 0.15, 0.3, -0.4 + i * 0.09) * k, Vector3(0.04, 0.03, 0.05) * k, spot)
-			for side in [-1.0, 1.0]:
-				for z in [-0.38, 0.38]:
-					LowPoly.add_tube(st, Vector3(0.14 * side, 0.2, z) * k, Vector3(0.55 * side, 0.15, z * 1.05) * k, 0.07 * k, 0.05 * k, fur)
-			LowPoly.add_tube(st, Vector3(0, 0.2, 0.52) * k, Vector3(0.25, 0.12, 1.1) * k, 0.045 * k, 0.035 * k, fur)
+		&"rabbit": species = Rabbit
+		&"chicken": species = Chicken
+		&"squirrel": species = Squirrel
+		&"deer": species = Deer
+		&"toucan": species = Toucan
+		&"monkey": species = Monkey
+		&"boar": species = Boar
+		&"jaguar": species = Jaguar
+	# Build the animal's model without putting the animal in the world.
+	var animal: Animal = species.new()
+	animal._rng.seed = 7 # Always the same colours for the item.
+	var root := Node3D.new()
+	animal._build_model(root)
+	# Lying on its side, legs pointing out sideways.
+	var scale: float = CARRY_SCALE.get(kind, 1.0)
+	var lying := Transform3D(Basis(Vector3.BACK, PI * 0.5) * Basis.from_scale(Vector3.ONE * scale), Vector3.ZERO)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_merge_meshes(st, root, lying)
+	root.free()
+	animal.free()
+	var merged := st.commit()
+	# Centre it, so it matches the pick-up box (which is centred) and lies on the grass.
+	var shift := -merged.get_aabb().get_center()
+	st = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.append_from(merged, 0, Transform3D(Basis(), shift))
 	return LowPoly.commit_smooth(st)
 
+
+## Adds every mesh under `node` (all the animal's body parts) into one mesh.
+static func _merge_meshes(st: SurfaceTool, node: Node, parent_transform: Transform3D) -> void:
+	for child in node.get_children():
+		if not child is Node3D:
+			continue
+		var child_transform: Transform3D = parent_transform * (child as Node3D).transform
+		if child is MeshInstance3D and child.mesh != null:
+			st.append_from(child.mesh, 0, child_transform)
+		_merge_meshes(st, child, child_transform)
 
 ## Captain Gus's white cap with its black band, visor and gold badge.
 static func _cap_mesh() -> Mesh:
@@ -369,23 +335,44 @@ static func _stone_mesh() -> Mesh:
 	return LowPoly.commit(st)
 
 
+## A sturdy branch: bark, a lighter cut end, a knot and two side twigs. Lies along Z.
 static func _stick_mesh() -> Mesh:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12
 	var st := LowPoly.begin()
+	var bark := PropLibrary.TRUNK_COLOR
+	var along_z := Basis(Vector3.RIGHT, PI * 0.5)
 	var shape := CylinderMesh.new()
-	shape.top_radius = 0.025
-	shape.bottom_radius = 0.035
+	shape.top_radius = 0.032
+	shape.bottom_radius = 0.042
 	shape.height = 0.7
-	shape.radial_segments = 5
-	shape.rings = 1
-	# Lie along Z so it points forward when held.
-	LowPoly.add_shape(st, shape, Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3.ZERO), PropLibrary.TRUNK_COLOR, 0.0, 0.1, rng)
+	shape.radial_segments = 7
+	shape.rings = 3
+	LowPoly.add_shape(st, shape, Transform3D(along_z, Vector3.ZERO), bark, 0.006, 0.12, rng)
+	# Light wood where it snapped off, at the back end.
+	var cut := CylinderMesh.new()
+	cut.top_radius = 0.038
+	cut.bottom_radius = 0.038
+	cut.height = 0.012
+	cut.radial_segments = 7
+	cut.rings = 1
+	LowPoly.add_shape(st, cut, Transform3D(along_z, Vector3(0, 0, 0.352)), PropLibrary.WOOD_COLOR, 0.0, 0.05, rng)
+	# A knot in the bark.
+	var knot := SphereMesh.new()
+	knot.radius = 0.022
+	knot.height = 0.044
+	knot.radial_segments = 6
+	knot.rings = 3
+	LowPoly.add_shape(st, knot, Transform3D(Basis(), Vector3(0.03, 0.012, 0.08)), bark.darkened(0.2), 0.0, 0.05, rng)
+	# Two twigs branching off toward the front.
 	var twig := CylinderMesh.new()
-	twig.top_radius = 0.008
-	twig.bottom_radius = 0.015
+	twig.top_radius = 0.007
+	twig.bottom_radius = 0.016
 	twig.height = 0.18
-	twig.radial_segments = 4
+	twig.radial_segments = 5
 	twig.rings = 1
-	LowPoly.add_shape(st, twig, Transform3D(Basis(Vector3.RIGHT, PI * 0.5).rotated(Vector3.UP, 0.6), Vector3(0.04, 0.0, 0.1)), PropLibrary.TRUNK_COLOR, 0.0, 0.1, rng)
+	for side in [-1.0, 1.0]:
+		var base := Vector3(0.025 * side, 0.0, -0.06 if side > 0 else 0.15)
+		var turn := Basis(Vector3.UP, 0.7 * side) * along_z
+		LowPoly.add_shape(st, twig, Transform3D(turn, base + turn * Vector3(0, 0.09, 0)), bark, 0.0, 0.1, rng)
 	return LowPoly.commit(st)

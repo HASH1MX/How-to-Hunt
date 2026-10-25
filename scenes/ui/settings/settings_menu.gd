@@ -80,6 +80,7 @@ func _build_game_tab() -> void:
 			func(v): Settings.set_value("invert_mouse_y", v))
 	_slider_row(page, "Field of view", 60.0, 110.0, 1.0, Settings.field_of_view,
 			func(v): return "%d°" % int(v), func(v): Settings.set_value("field_of_view", v))
+	_check_row(page, "Head bob", Settings.head_bob, func(v): Settings.set_value("head_bob", v))
 	_slider_row(page, "Master volume", 0.0, 1.0, 0.05, Settings.master_volume,
 			func(v): return "%d%%" % int(v * 100.0), func(v): Settings.set_value("master_volume", v))
 	_slider_row(page, "Effects volume", 0.0, 1.0, 0.05, Settings.effects_volume,

@@ -1,0 +1,14 @@
+How to Hunt
+
+Playing alone: start How to Hunt, press Play and pick (or create) a world.
+
+Playing with friends (over the internet, through Steam):
+1. Start Steam and log in. The game connects players through Steam, where it shows as "Spacewar".
+2. Start How to Hunt and press Multiplayer.
+   - To host: press "Host on Steam", then press Esc in the game and "Copy join code". Send the code to your friends.
+   - To join: paste the code and press Join (or pick a game from "Open games").
+Everyone needs the same version of the game.
+
+Your saved worlds and settings are stored in:
+  %APPDATA%\Godot\app_userdata\How to Hunt
+They are kept when you uninstall or update the game.

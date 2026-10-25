@@ -48,6 +48,8 @@ const PRESETS := [
 var mouse_sensitivity := 1.0
 var invert_mouse_y := false
 var field_of_view := 80.0
+## The view bobs gently with each step while walking (off for players who get motion sick).
+var head_bob := true
 # Sound (0 to 1)
 var master_volume := 0.8
 var effects_volume := 1.0
@@ -69,7 +71,7 @@ var glow := true
 var detail_distance := 1.3
 
 const SAVED_VALUES := {
-	game = ["mouse_sensitivity", "invert_mouse_y", "field_of_view", "master_volume", "effects_volume", "ambience_volume"],
+	game = ["mouse_sensitivity", "invert_mouse_y", "field_of_view", "head_bob", "master_volume", "effects_volume", "ambience_volume"],
 	display = ["window_mode", "vsync", "max_fps", "render_scale", "brightness"],
 	graphics = ["anti_aliasing", "shadow_quality", "ambient_occlusion", "glow", "detail_distance"],
 }

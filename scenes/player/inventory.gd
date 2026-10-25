@@ -1,7 +1,7 @@
 class_name Inventory
 extends Node
 ## The player's inventory:
-##   - 4 slots, chosen with the keys 1-4
+##   - 4 slots, chosen with the keys 1-4 or the scroll wheel
 ##   - 1 hand slot: picked-up items go here and are held in the hand.
 ##     Pressing 1-4 while holding something stores it in that slot
 ##     (swapping with whatever was there). Q drops the item you're holding.
@@ -118,6 +118,29 @@ func press_slot(index: int) -> void:
 			hand_count = previous_count
 	selected_slot = index
 	changed.emit()
+
+
+## Scroll wheel: selects the next (+1) or previous (-1) slot, wrapping around.
+## Something just picked up (in the hand) is put away into the slots first, but only
+## if it fits: scrolling never drops anything. Returns true if the selection changed.
+func scroll(direction: int) -> bool:
+	if hand_item != null:
+		if not _hand_fits_in_slots():
+			return false
+		_stash_hand_stack()
+	selected_slot = wrapi(selected_slot + direction, 0, SLOT_COUNT)
+	changed.emit()
+	return true
+
+
+func _hand_fits_in_slots() -> bool:
+	var room := 0
+	for i in SLOT_COUNT:
+		if slots[i] == null:
+			return true
+		if slots[i].id == hand_item.id:
+			room += hand_item.max_stack - slot_counts[i]
+	return room >= hand_count
 
 
 ## Drops one item: from the hand stack, or else from the selected slot's stack.

@@ -26,7 +26,7 @@ signal upnp_finished
 const DEFAULT_PORT := 7777
 const MAX_PLAYERS := 10
 ## Bump this when a change makes old and new versions unable to play together.
-const PROTOCOL_VERSION := 13
+const PROTOCOL_VERSION := 14
 const SEND_RATE := 20.0
 const MAIN_MENU := "res://scenes/ui/main_menu/main_menu.tscn"
 const SAVE_PATH := "user://multiplayer.cfg"

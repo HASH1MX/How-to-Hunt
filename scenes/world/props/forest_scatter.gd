@@ -70,7 +70,7 @@ func generate() -> void:
 	_scatter("Birches", PropLibrary.birch_tree, 250, birch_count, rng,
 			{min_dist = clearing_radius, max_edge = 0.68, scale = Vector2(0.8, 1.15), collision = "trunk", tint = 0.08, sink = 0.3})
 	_scatter("Rocks", PropLibrary.rock, 300, rock_count, rng,
-			{min_dist = clearing_radius * 0.6, max_edge = 1.0, scale = Vector2(0.5, 1.8), collision = "convex", keep_off_crash_site = true})
+			{on_rock = true, min_dist = clearing_radius * 0.6, max_edge = 1.0, scale = Vector2(0.5, 1.8), collision = "convex", keep_off_crash_site = true})
 	_scatter("Logs", PropLibrary.fallen_log, 350, log_count, rng,
 			{min_dist = clearing_radius * 0.8, max_edge = 0.85, collision = "convex", keep_off_crash_site = true, sink = 0.05})
 	_scatter("Stumps", PropLibrary.stump, 380, stump_count, rng,
@@ -82,7 +82,7 @@ func generate() -> void:
 	_scatter("Mushrooms", PropLibrary.mushrooms, 500, mushroom_count, rng,
 			{min_dist = clearing_radius * 0.7, max_edge = 0.85, scale = Vector2(0.8, 1.6), keep_off_crash_site = true, shadow = false, view_distance = SMALL_PROP_VIEW_DISTANCE})
 	_scatter("Pebbles", PropLibrary.pebbles, 540, pebble_count, rng,
-			{max_edge = 0.9, keep_off_crash_site = true, shadow = false, view_distance = SMALL_PROP_VIEW_DISTANCE})
+			{on_rock = true, max_edge = 0.9, keep_off_crash_site = true, shadow = false, view_distance = SMALL_PROP_VIEW_DISTANCE})
 	_scatter("Grass", PropLibrary.grass_clump, 400, grass_count, rng,
 			{max_edge = 0.95, scale = Vector2(0.7, 1.4), tint = 0.15, keep_off_crash_site = true, patchy = true, shadow = false, view_distance = GRASS_VIEW_DISTANCE, sink = 0.05})
 
@@ -94,7 +94,7 @@ func _generate_jungle(rng: RandomNumberGenerator) -> void:
 	_scatter("LeafyTrees", PropLibrary.leafy_tree, 200, 260, rng,
 			{min_dist = clearing_radius, max_edge = 0.7, scale = Vector2(1.0, 1.5), collision = "trunk", tint = 0.15, sink = 0.3})
 	_scatter("Rocks", PropLibrary.rock, 300, 160, rng,
-			{min_dist = clearing_radius * 0.6, max_edge = 1.0, scale = Vector2(0.5, 1.6), collision = "convex", keep_off_crash_site = true})
+			{on_rock = true, min_dist = clearing_radius * 0.6, max_edge = 1.0, scale = Vector2(0.5, 1.6), collision = "convex", keep_off_crash_site = true})
 	_scatter("Ferns", PropLibrary.fern, 640, 1400, rng,
 			{max_edge = 0.85, scale = Vector2(0.8, 1.6), tint = 0.15, keep_off_crash_site = true, shadow = false, view_distance = GRASS_VIEW_DISTANCE})
 	_scatter("Bushes", PropLibrary.bush, 420, 700, rng,
@@ -134,6 +134,8 @@ func clear_area(center: Vector2, radius: float) -> void:
 ##   shadow               - whether copies cast shadows
 ##   view_distance        - hide copies further away than this (0 = always visible)
 ##   sink                 - push down into the ground a little so nothing floats on slopes
+##   on_rock              - may also go on bare rock (rocks, pebbles); everything else only
+##                          grows on grassy ground
 func _scatter(group: String, builder: Callable, seed_base: int, count: int, rng: RandomNumberGenerator, settings: Dictionary) -> void:
 	var min_dist: float = settings.get("min_dist", 0.0)
 	var max_edge: float = settings.get("max_edge", 0.9)
@@ -145,6 +147,7 @@ func _scatter(group: String, builder: Callable, seed_base: int, count: int, rng:
 	var shadow: bool = settings.get("shadow", true)
 	var view_distance: float = settings.get("view_distance", 0.0)
 	var sink: float = settings.get("sink", 0.0)
+	var on_rock: bool = settings.get("on_rock", false)
 
 	var meshes: Array[Mesh] = []
 	var shapes: Array[Shape3D] = []
@@ -170,6 +173,8 @@ func _scatter(group: String, builder: Callable, seed_base: int, count: int, rng:
 		if keep_off and _is_cleared(spot.x, spot.z):
 			continue
 		if patchy and _patch_noise.get_noise_2d(spot.x, spot.z) < -0.15:
+			continue
+		if not on_rock and terrain.get_surface_at(spot.x, spot.z) != "grass":
 			continue
 		var size := rng.randf_range(scale_range.x, scale_range.y)
 		var rot := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size)

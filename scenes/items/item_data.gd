@@ -17,6 +17,9 @@ extends Resource
 @export var beacon := false
 ## How many fit in one inventory slot.
 @export var max_stack := 5
+## The inventory picture looks down from above (for animals lying on their side,
+## so you see their whole profile) instead of from the front corner.
+@export var icon_from_above := false
 
 @export_group("Using it")
 ## What left click does while holding it: "" (punch), "melee" (knife), "gun", "flare".
@@ -40,7 +43,7 @@ extends Resource
 @export var ammo := ""
 ## Aiming (right click) zooms the view to this field of view (0 = a small zoom only).
 @export var zoom_fov := 0.0
-## How hard it kicks back when fired.
+## How hard it kicks back when fired: degrees the view climbs per shot (see WeaponHandler).
 @export var recoil := 0.4
 ## Sound group (see Sfx) played when firing.
 @export var sound := ""

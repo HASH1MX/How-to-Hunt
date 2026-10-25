@@ -95,8 +95,7 @@ static func give_gifts(player: Node) -> PackedStringArray:
 		lines.append("Oh, before I forget: take my old knife. It cuts better than your knuckles do.")
 	if Quests.is_done("big_game") and not inventory.has_item(&"pistol"):
 		inventory.pick_up(ItemLibrary.get_item(&"pistol"))
-		player.weapons.add_ammo("pistol", 24)
-		lines.append("And here's my old pistol, with a few bullets. Aim, right click. Reload, R. Don't shoot me.")
+		lines.append("And here's my old pistol. Never runs out of bullets, don't ask me how. Aim, right click. Reload, R. Don't shoot me.")
 	if Quests.is_active("signal_for_help") and Quests.get_progress("signal_for_help", 0) == 0 and not inventory.has_item(&"case_key"):
 		inventory.pick_up(ItemLibrary.get_item(&"case_key"))
 		lines.append("Here's the key to the emergency case. Don't lose it, it's the only one. Well, I'd make you another one somehow.")

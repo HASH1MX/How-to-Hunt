@@ -51,6 +51,8 @@ var _aim_amount := 0.0
 var _reload_amount := 0.0
 var _kick := 0.0
 var _kick_velocity := 0.0
+var _twist := 0.0
+var _twist_velocity := 0.0
 var _muzzle_z := -0.2
 var _punch_amount := [0.0, 0.0]
 ## Set by the player each frame, used for bobbing.
@@ -127,9 +129,11 @@ func punch_with(arm: int, gap: float) -> bool:
 	return true
 
 
-## A gun was fired: the arms and gun jump back and up, then spring back.
-func kick(amount: float) -> void:
+## A gun was fired: the arms and gun jump back and up (twisting a little to one side,
+## `twist` -1..1), then spring back.
+func kick(amount: float, twist: float = 0.0) -> void:
 	_kick_velocity += amount * 9.0
+	_twist_velocity += amount * twist * 6.0
 
 
 ## Holds a gun the way `pose` says ("" = back to fists). `gun_length` is how far the
@@ -162,9 +166,10 @@ func _process(delta: float) -> void:
 	_cooldown = maxf(_cooldown - delta, 0.0)
 
 	# Walking bob: faster and bigger while sprinting, none while in the air.
-	var target_bob := clampf(move_speed / 5.0, 0.0, 1.8) if on_floor else 0.0
+	var target_bob := clampf(move_speed / 3.8, 0.0, 1.6) if on_floor else 0.0
 	_bob_amount = lerpf(_bob_amount, target_bob, 1.0 - exp(-8.0 * delta))
-	_bob_phase += delta * (7.0 + move_speed * 0.9) * minf(_bob_amount, 1.0)
+	# One bob per footstep (same step length as the footstep sounds and the head bob).
+	_bob_phase += move_speed * delta / (1.55 + move_speed * 0.13) * PI
 	_sway = _sway.lerp(Vector2.ZERO, 1.0 - exp(-6.0 * delta))
 	# Springy landing dip.
 	_dip_velocity += (-_dip * 120.0 - _dip_velocity * 14.0) * delta
@@ -202,8 +207,14 @@ func _process(delta: float) -> void:
 ## With a gun: place the gun in front of the camera (moving to the middle when aiming,
 ## down while reloading, kicking back when fired) and put both hands on it.
 func _update_gun(delta: float) -> void:
-	_kick_velocity += (-_kick * 160.0 - _kick_velocity * 16.0) * delta
-	_kick += _kick_velocity * delta
+	# Springs, in small steps so they stay smooth at low FPS.
+	var steps := ceili(delta / (1.0 / 120.0))
+	var dt := delta / steps
+	for i in steps:
+		_kick_velocity += (-_kick * 160.0 - _kick_velocity * 16.0) * dt
+		_kick += _kick_velocity * dt
+		_twist_velocity += (-_twist * 180.0 - _twist_velocity * 15.0) * dt
+		_twist += _twist_velocity * dt
 	_aim_amount = move_toward(_aim_amount, 1.0 if aiming else 0.0, delta * 6.0)
 	_reload_amount = move_toward(_reload_amount, 1.0 if reloading else 0.0, delta * 5.0)
 	gun_anchor.visible = hold_pose != ""
@@ -213,7 +224,7 @@ func _update_gun(delta: float) -> void:
 	var bob := Vector3(cos(_bob_phase) * 0.008, -absf(sin(_bob_phase)) * 0.012, 0.0) * _bob_amount * (1.0 - _aim_amount * 0.8)
 	var grip: Vector3 = pose.rest.lerp(pose.aim, _aim_amount) + bob + Vector3(0, _dip * 0.08 - _reload_amount * 0.12, 0)
 	grip += Vector3(-_sway.x * 0.15, _sway.y * 0.15, 0) * (1.0 - _aim_amount)
-	grip += Vector3(0, _kick * 0.012, _kick * 0.05)
+	grip += Vector3(_twist * 0.01, _kick * 0.014, _kick * 0.06)
 	var tilt := 0.0
 	if hold_pose == "knife":
 		# Stab forward and a little inward when "punching" with the knife.
@@ -221,7 +232,7 @@ func _update_gun(delta: float) -> void:
 		grip += Vector3(-0.1, 0.07, -0.2) * stab
 		tilt = 0.35 - stab * 0.3
 	gun_anchor.position = grip
-	gun_anchor.rotation = Vector3(tilt + _kick * 0.12 - _reload_amount * 0.7 - _sway.y * 0.5, -_sway.x * 0.5, _reload_amount * 0.35)
+	gun_anchor.rotation = Vector3(tilt + _kick * 0.16 - _reload_amount * 0.7 - _sway.y * 0.5, -_sway.x * 0.5 - _twist * 0.05, _reload_amount * 0.35 + _twist * 0.12)
 	# Hands: the right fist on the grip, the left one supporting the gun.
 	var gun_xform := gun_anchor.transform
 	_place_fist(1, gun_xform * Vector3(0.0, -0.035, 0.025), gun_anchor.rotation + Vector3(0.05, 0.35, -1.45))

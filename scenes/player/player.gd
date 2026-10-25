@@ -46,14 +46,24 @@ signal dialogue_requested(speaker: String, lines: PackedStringArray, on_finished
 @export var hold_punch_gap: float = 0.32
 
 @export_group("Movement")
-@export var walk_speed: float = 5.0
-@export var sprint_speed: float = 8.5
-@export var crouch_speed: float = 2.5
+## Meters per second. A brisk walk and a jog: fast enough to cross the island,
+## slow enough that the world doesn't fly past.
+@export var walk_speed: float = 3.8
+@export var sprint_speed: float = 6.2
+@export var crouch_speed: float = 1.9
+## How quickly you reach full speed and come to a stop on the ground (m/s per second).
+## Without this, movement starts and stops instantly, which feels like floating.
+@export var ground_acceleration: float = 24.0
+@export var ground_deceleration: float = 30.0
+## How much the view moves up and down with each step (meters). 0 = no head bob.
+@export var head_bob_amount: float = 0.035
+## Longest side of a hunted animal while it's carried in the hand (meters).
+const HELD_BODY_SIZE := 0.3
 ## Body height standing and crouching (meters). The eyes are a little below the top.
 @export var stand_height: float = 2.0
 @export var crouch_height: float = 1.3
 ## How much wider the view gets while sprinting, for a feeling of speed.
-@export var sprint_fov_boost: float = 8.0
+@export var sprint_fov_boost: float = 4.0
 @export var jump_velocity: float = 4.5
 ## Minimum seconds between jumps, so spamming jump can't chain jumps up slopes.
 @export var jump_cooldown: float = 0.4
@@ -141,6 +151,10 @@ var in_cutscene := false
 ## Steep surfaces touched last frame, used to stop "climbing" walls by jumping.
 var _steep_normals: Array[Vector3] = []
 var is_crouching := false
+## Eye height above the feet (lower while crouching); the head bob is added on top.
+var _eye_height := 1.65
+var _bob_phase := 0.0
+var _bob_weight := 0.0
 ## How long the punch button has been held without letting go.
 var _attack_held_time := 0.0
 ## A click that came a little too early is remembered for this long, so no click is lost.
@@ -149,6 +163,7 @@ var _punch_buffer := 0.0
 
 func _ready() -> void:
 	spawn_position = global_position
+	_eye_height = head.position.y
 	# Every player needs its own collision shape, because crouching changes its height.
 	body_shape.shape = body_shape.shape.duplicate()
 	_apply_settings()
@@ -189,6 +204,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled() # This click only captures the mouse, it doesn't punch.
 	elif in_dialogue:
 		return # The dialogue box handles E while talking.
+	elif _is_wheel(event) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not weapons.is_scoped():
+		# Scroll wheel: down = next slot, up = previous slot.
+		var step := 1 if event.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1
+		if inventory.scroll(step):
+			Sfx.play("slot", -8.0, 0.08)
 	elif event.is_action_pressed("interact"):
 		var target := get_interact_target()
 		if target != null:
@@ -202,6 +222,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event.is_action_pressed("slot_%d" % (i + 1)):
 				inventory.press_slot(i)
 				Sfx.play("slot", -8.0, 0.08)
+
+
+func _is_wheel(event: InputEvent) -> bool:
+	return event is InputEventMouseButton and event.pressed \
+			and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]
 
 
 func _physics_process(delta: float) -> void:
@@ -233,9 +258,17 @@ func _physics_process(delta: float) -> void:
 		speed = crouch_speed
 	elif sprinting:
 		speed = sprint_speed
-	if direction:
-		velocity.x = direction.x * speed
-		velocity.z = direction.z * speed
+	var target := direction * speed
+	if is_on_floor() or is_in_deep_water:
+		# On the ground: speed up and slow down over a fraction of a second, so the
+		# body has some weight instead of snapping to full speed.
+		var rate := ground_acceleration if direction else ground_deceleration
+		velocity.x = move_toward(velocity.x, target.x, rate * delta)
+		velocity.z = move_toward(velocity.z, target.z, rate * delta)
+	elif direction:
+		# In the air you can steer freely, like before.
+		velocity.x = target.x
+		velocity.z = target.z
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, speed)
 		velocity.z = move_toward(velocity.z, 0.0, speed)
@@ -250,6 +283,7 @@ func _physics_process(delta: float) -> void:
 	_move_without_wall_climbing()
 	if not was_on_floor and is_on_floor():
 		_on_landed(landing_speed)
+	_update_head_bob(delta)
 	view_model.move_speed = Vector2(velocity.x, velocity.z).length()
 	view_model.on_floor = is_on_floor() or is_in_deep_water
 	view_model.sprinting = sprinting and direction != Vector3.ZERO
@@ -345,9 +379,25 @@ func _update_crouch(delta: float, wants_crouch: bool) -> void:
 		body_shape.position.y = capsule.height * 0.5
 		body_mesh.scale.y = capsule.height / stand_height
 		body_mesh.position.y = capsule.height * 0.5
-	# The eyes glide down and up instead of snapping.
-	var eye_height := target_height - 0.35
-	head.position.y = lerpf(head.position.y, eye_height, 1.0 - exp(-14.0 * delta))
+	# The eyes glide down and up instead of snapping (the head bob is added on top).
+	_eye_height = lerpf(_eye_height, target_height - 0.35, 1.0 - exp(-14.0 * delta))
+
+
+## A gentle bob of the view while walking: one small dip per footstep (the same step
+## length as the footstep sounds) and a slight sway from side to side. It's what makes
+## walking feel like walking instead of gliding. Can be turned off in Settings.
+func _update_head_bob(delta: float) -> void:
+	var flat_speed := Vector2(velocity.x, velocity.z).length()
+	var walking := is_on_floor() and not is_in_deep_water and flat_speed > 0.5
+	var target_weight := clampf(flat_speed / walk_speed, 0.0, 1.4) if walking else 0.0
+	if not Settings.head_bob:
+		target_weight = 0.0
+	_bob_weight = lerpf(_bob_weight, target_weight, 1.0 - exp(-8.0 * delta))
+	var step_length := 1.55 + flat_speed * 0.13
+	_bob_phase += flat_speed * delta / step_length * PI
+	var dip := (1.0 - cos(_bob_phase * 2.0)) * 0.5 # 0 -> 1 -> 0 once per step.
+	var bob := Vector3(sin(_bob_phase) * 0.6, -dip, 0.0) * head_bob_amount * _bob_weight
+	head.position = Vector3(bob.x, _eye_height + bob.y, 0.0)
 
 
 func _has_room_to_stand() -> bool:
@@ -545,6 +595,16 @@ func _update_held_item() -> void:
 		view_model.gun_anchor.add_child(model)
 		return
 	view_model.set_hold_pose("")
+	if item.icon_from_above:
+		# A hunted animal is carried by the scruff: shrunk to fit in the hand (a deer
+		# would otherwise fill the whole screen), hanging a little below the fist.
+		var bounds := item.mesh.get_aabb()
+		var fit := minf(HELD_BODY_SIZE / maxf(bounds.size[bounds.get_longest_axis_index()], 0.01), 1.0)
+		model.scale = Vector3.ONE * fit
+		model.rotation = Vector3(-0.9, 0.4, 0.0) # Undo the fist's upward tilt, turn a bit sideways.
+		model.position = Vector3(0.02, -0.06, -0.04)
+		view_model.held_item_anchor.add_child(model)
+		return
 	# Long items (like a stick) stick out forward from the fist.
 	model.position.z = -item.mesh.get_aabb().size.z * 0.3
 	view_model.held_item_anchor.add_child(model)

@@ -1,19 +1,10 @@
 class_name ShopMenu
 extends Control
 ## Trader Tomas's shop on Island 2: buy guns (shotgun, SMG, assault rifle, sniper rifle,
-## and a pistol if you lost yours) and boxes of ammo with the money you earn hunting.
+## and a pistol if you lost yours) with the money you earn hunting. Ammo is unlimited.
 ## In the same look as the other menus. Opened by talking to the trader.
 
 signal closed
-
-## Boxes of ammo for sale: [ammo type, rounds per box, price, name].
-const AMMO_BOXES := [
-	["pistol", 16, 20, "Pistol bullets"],
-	["shells", 10, 30, "Shotgun shells"],
-	["smg", 60, 35, "SMG bullets"],
-	["rifle", 60, 45, "Rifle bullets"],
-	["sniper", 10, 60, "Sniper bullets"],
-]
 
 var player: Node
 
@@ -96,10 +87,9 @@ func _refresh() -> void:
 		var owned: bool = player.inventory.has_item(weapon.id)
 		var info := "%s damage, %s" % [_damage_text(weapon), "%d rounds" % weapon.magazine]
 		_list.add_child(_row(weapon.display_name, info, weapon.price, "Owned" if owned else "Buy", not owned, _buy_weapon.bind(weapon)))
-	_list.add_child(UiStyle.label("Ammo", 22, UiStyle.TITLE_COLOR))
-	for box in AMMO_BOXES:
-		var have: int = player.weapons.get_reserve(box[0])
-		_list.add_child(_row(box[3], "%d per box   (you have %d)" % [box[1], have], box[2], "Buy", true, _buy_ammo.bind(box)))
+	var free := UiStyle.label("Ammo is on the house: every gun has unlimited bullets.", 16, UiStyle.DIM_TEXT_COLOR)
+	free.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_list.add_child(free)
 
 
 func _damage_text(weapon: ItemData) -> String:
@@ -137,22 +127,8 @@ func _buy_weapon(weapon: ItemData) -> void:
 		return
 	player.add_money(-weapon.price)
 	player.inventory.pick_up(weapon)
-	# A gun comes with one spare magazine.
-	player.weapons.add_ammo(weapon.ammo, weapon.magazine)
 	Sfx.play("coins", -2.0, 0.04)
 	_say("Bought the %s. Pleasure doing business!" % weapon.display_name)
-	_refresh()
-
-
-func _buy_ammo(box: Array) -> void:
-	if player.money < box[2]:
-		_say("Not enough money. Go hunt something!")
-		Sfx.play("ui_error", -6.0, 0.02, "UI")
-		return
-	player.add_money(-box[2])
-	player.weapons.add_ammo(box[0], box[1])
-	Sfx.play("coins", -2.0, 0.04)
-	_say("Bought %d %s." % [box[1], String(box[3]).to_lower()])
 	_refresh()
 
 

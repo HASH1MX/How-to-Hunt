@@ -43,6 +43,15 @@ var _noise := FastNoiseLite.new()
 var _color_noise := FastNoiseLite.new()
 var _shape_noise := FastNoiseLite.new()
 var _ridge_noise := FastNoiseLite.new()
+## Ground steeper than this (height change per metre) is bare rock; a little less steep
+## is mossy rock. Grass, flowers and trees only grow below GRASS_SLOPE.
+const ROCK_SLOPE := 0.95
+const GRASS_SLOPE := 0.75
+## Heights of every grid corner, exactly as the ground mesh is built (see get_height).
+var _grid := PackedFloat32Array()
+var _rock := PackedFloat32Array()
+var _corners := 0
+var _step := 1.0
 var _mesh_instance: MeshInstance3D
 var _collision_shape: CollisionShape3D
 var _sea_floor: CollisionShape3D
@@ -52,9 +61,62 @@ func _ready() -> void:
 	generate()
 
 
-## Height of the ground at a world X/Z position. Use this to place
-## trees, rocks and spawn points on the ground.
+## Height of the ground at a world X/Z position, exactly on the faceted ground you see and
+## walk on (the same triangles as the mesh). Use this to place trees, rocks and spawn
+## points, so nothing floats above or sinks into a slope.
 func get_height(x: float, z: float) -> float:
+	if _grid.is_empty():
+		return _shape_height(x, z)
+	var half := size * 0.5
+	var gx := (x + half) / _step
+	var gz := (z + half) / _step
+	var xi := floori(gx)
+	var zi := floori(gz)
+	if xi < 0 or zi < 0 or xi >= resolution or zi >= resolution:
+		return _shape_height(x, z)
+	var fx := gx - xi
+	var fz := gz - zi
+	var h00 := _grid[zi * _corners + xi]
+	var h10 := _grid[zi * _corners + xi + 1]
+	var h01 := _grid[(zi + 1) * _corners + xi]
+	var h11 := _grid[(zi + 1) * _corners + xi + 1]
+	# Each square is two triangles: (00, 10, 01) and (10, 11, 01).
+	if fx + fz <= 1.0:
+		return h00 + (h10 - h00) * fx + (h01 - h00) * fz
+	return h11 + (h01 - h11) * (1.0 - fx) + (h10 - h11) * (1.0 - fz)
+
+
+## How "rocky" the ground is here: 0 = grass, 1 = bare rock (steep slopes and peaks).
+## Worked out once per grid corner when the island is built, from the slope over a few
+## metres, so single triangles don't flip between grass and rock.
+func get_rockiness(x: float, z: float) -> float:
+	if _rock.is_empty():
+		return 0.0
+	var half := size * 0.5
+	var gx := clampf((x + half) / _step, 0.0, resolution - 0.001)
+	var gz := clampf((z + half) / _step, 0.0, resolution - 0.001)
+	var xi := floori(gx)
+	var zi := floori(gz)
+	var fx := gx - xi
+	var fz := gz - zi
+	var top := lerpf(_rock[zi * _corners + xi], _rock[zi * _corners + xi + 1], fx)
+	var bottom := lerpf(_rock[(zi + 1) * _corners + xi], _rock[(zi + 1) * _corners + xi + 1], fx)
+	return lerpf(top, bottom, fz)
+
+
+func _corner_rockiness(xi: int, zi: int) -> float:
+	var left := _grid[zi * _corners + maxi(xi - 1, 0)]
+	var right := _grid[zi * _corners + mini(xi + 1, _corners - 1)]
+	var up := _grid[maxi(zi - 1, 0) * _corners + xi]
+	var down := _grid[mini(zi + 1, _corners - 1) * _corners + xi]
+	var slope := Vector2(right - left, down - up).length() / (2.0 * _step)
+	var by_slope := smoothstep(GRASS_SLOPE, ROCK_SLOPE, slope)
+	var by_height := smoothstep(mountain_height * 0.68, mountain_height * 0.8, _grid[zi * _corners + xi])
+	return maxf(by_slope, by_height)
+
+
+## The smooth shape of the island before it is cut into triangles.
+func _shape_height(x: float, z: float) -> float:
 	var dist := Vector2(x, z).length()
 	# Noise makes the mountain ring and coastline wobbly instead of perfect circles.
 	var wobbly_dist := dist + _shape_noise.get_noise_2d(x, z) * 22.0
@@ -84,14 +146,15 @@ func get_height(x: float, z: float) -> float:
 
 ## What the ground is made of at a world position: "grass", "sand" or "rock".
 ## Used to pick footstep sounds.
+## Also used to keep grass and trees off bare rock and sand (see ForestScatter).
 func get_surface_at(x: float, z: float) -> String:
-	var height := get_height(x, z)
-	if height < water_level + 0.9 and Vector2(x, z).length() > mountain_radius:
+	if _is_beach(get_height(x, z), x, z):
 		return "sand"
-	var slope := absf(get_height(x + 1.0, z) - height) + absf(get_height(x, z + 1.0) - height)
-	if slope > 0.95 or height > mountain_height * 0.75:
-		return "rock"
-	return "grass"
+	return "rock" if get_rockiness(x, z) > 0.5 else "grass"
+
+
+func _is_beach(height: float, x: float, z: float) -> bool:
+	return height < water_level + 0.9 and Vector2(x, z).length() > mountain_radius
 
 
 ## Roughly how far from the middle there is dry land.
@@ -121,11 +184,22 @@ func generate() -> void:
 	var corners := resolution + 1
 	var points := PackedVector3Array()
 	points.resize(corners * corners)
+	_grid = PackedFloat32Array()
 	for zi in corners:
 		for xi in corners:
 			var x := -half + xi * step
 			var z := -half + zi * step
-			points[zi * corners + xi] = Vector3(x, get_height(x, z), z)
+			points[zi * corners + xi] = Vector3(x, _shape_height(x, z), z)
+	_grid.resize(corners * corners)
+	for i in points.size():
+		_grid[i] = points[i].y
+	_corners = corners
+	_step = step
+	_rock = PackedFloat32Array()
+	_rock.resize(corners * corners)
+	for zi in corners:
+		for xi in corners:
+			_rock[zi * corners + xi] = _corner_rockiness(xi, zi)
 	for zi in resolution:
 		for xi in resolution:
 			var p00 := points[zi * corners + xi]
@@ -174,12 +248,17 @@ func _add_triangle(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 	var steepness := 1.0 - absf(normal.y) # 0 = flat, 1 = vertical wall
 
 	var color := grass_color_a.lerp(grass_color_b, _color_noise.get_noise_2d(center.x, center.z) * 0.5 + 0.5)
-	if center.y < water_level + 0.9 and Vector2(center.x, center.z).length() > mountain_radius:
+	if _is_beach(center.y, center.x, center.z):
 		# Beach: dry sand above the water, darker wet sand below it.
 		color = sand_color if center.y > water_level else wet_sand_color
-	elif steepness > 0.28 or center.y > mountain_height * 0.75:
-		# Steep slopes and high peaks are bare rock.
-		color = rock_color.lerp(rock_color * 0.85, _color_noise.get_noise_2d(center.x * 2.0, center.z * 2.0) * 0.5 + 0.5)
+	else:
+		# Steep slopes and high peaks are rock, with a mossy mix where grass meets rock.
+		# Worked out from the smoothed slope, so the edge is a soft band, not a checkerboard.
+		var rock := rock_color.lerp(rock_color * 0.85, _color_noise.get_noise_2d(center.x * 2.0, center.z * 2.0) * 0.5 + 0.5)
+		var rockiness := get_rockiness(center.x, center.z)
+		if steepness > 0.45:
+			rockiness = 1.0 # Cliffs are always bare.
+		color = color.lerp(rock, rockiness)
 	st.set_color(color)
 	st.add_vertex(a)
 	st.add_vertex(b)
